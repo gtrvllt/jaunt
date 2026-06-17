@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "if": "Bash(git push*)",
+        "hooks": [
+          {
+            "type": "agent",
+            "prompt": "Run a design review before this git push. Read the diff with `git diff main...HEAD` (or `git diff HEAD~1 HEAD` if on main). Check the changes against the Jaunt project rules defined in CLAUDE.md and README.md on these 4 axes:\n1. Modèle de données — types from src/types/supabase.ts, no invented client-side fields\n2. Architecture — business logic in composables, state in Pinia, one component per route in src/views/\n3. CLAUDE.md rules — no `any`, no `console.log`, loading/empty/error states on async data\n4. Sécurité — no secrets exposed, sensitive logic in Edge Functions not client-side\n\nIf you find blocking issues (❌), output JSON: {\"continue\": false, \"stopReason\": \"Design review failed: <list the issues>\"}\nIf only warnings (⚠️) or all clear (✅), output JSON: {\"continue\": true, \"systemMessage\": \"Design review passed. <summary>\"}\nKeep the summary under 3 lines.",
+            "timeout": 60,
+            "statusMessage": "Running design review before push..."
+          }
+        ]
+      }
+    ]
+  }
+}
