@@ -7,6 +7,9 @@ export type Json =
   | Json[]
 
 export type Database = {
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   public: {
     Tables: {
       achievement: {
@@ -29,6 +32,38 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      event: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          profile_id: string | null
+          properties: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          profile_id?: string | null
+          properties?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          profile_id?: string | null
+          properties?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       interest: {
         Row: {
@@ -55,7 +90,7 @@ export type Database = {
           current_quest_index: number
           id: string
           scheduled_at: string | null
-          status: Database['public']['Enums']['jaunt_status']
+          status: Database["public"]["Enums"]["jaunt_status"]
           theme_id: string
         }
         Insert: {
@@ -64,7 +99,7 @@ export type Database = {
           current_quest_index?: number
           id?: string
           scheduled_at?: string | null
-          status?: Database['public']['Enums']['jaunt_status']
+          status?: Database["public"]["Enums"]["jaunt_status"]
           theme_id: string
         }
         Update: {
@@ -73,16 +108,16 @@ export type Database = {
           current_quest_index?: number
           id?: string
           scheduled_at?: string | null
-          status?: Database['public']['Enums']['jaunt_status']
+          status?: Database["public"]["Enums"]["jaunt_status"]
           theme_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'jaunt_theme_id_fkey'
-            columns: ['theme_id']
+            foreignKeyName: "jaunt_theme_id_fkey"
+            columns: ["theme_id"]
             isOneToOne: false
-            referencedRelation: 'jaunt_theme'
-            referencedColumns: ['id']
+            referencedRelation: "jaunt_theme"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -118,7 +153,7 @@ export type Database = {
           jaunt_id: string
           joined_at: string
           profile_id: string
-          status: Database['public']['Enums']['participation_status']
+          status: Database["public"]["Enums"]["participation_status"]
         }
         Insert: {
           arrived_at?: string | null
@@ -127,7 +162,7 @@ export type Database = {
           jaunt_id: string
           joined_at?: string
           profile_id: string
-          status?: Database['public']['Enums']['participation_status']
+          status?: Database["public"]["Enums"]["participation_status"]
         }
         Update: {
           arrived_at?: string | null
@@ -136,22 +171,22 @@ export type Database = {
           jaunt_id?: string
           joined_at?: string
           profile_id?: string
-          status?: Database['public']['Enums']['participation_status']
+          status?: Database["public"]["Enums"]["participation_status"]
         }
         Relationships: [
           {
-            foreignKeyName: 'participation_jaunt_id_fkey'
-            columns: ['jaunt_id']
+            foreignKeyName: "participation_jaunt_id_fkey"
+            columns: ["jaunt_id"]
             isOneToOne: false
-            referencedRelation: 'jaunt'
-            referencedColumns: ['id']
+            referencedRelation: "jaunt"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'participation_profile_id_fkey'
-            columns: ['profile_id']
+            foreignKeyName: "participation_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: 'profile'
-            referencedColumns: ['id']
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -161,7 +196,7 @@ export type Database = {
           id: string
           joined_at: string
           nickname: string
-          status: Database['public']['Enums']['profile_status']
+          status: Database["public"]["Enums"]["profile_status"]
           xp_points: number
         }
         Insert: {
@@ -169,7 +204,7 @@ export type Database = {
           id: string
           joined_at?: string
           nickname: string
-          status?: Database['public']['Enums']['profile_status']
+          status?: Database["public"]["Enums"]["profile_status"]
           xp_points?: number
         }
         Update: {
@@ -177,7 +212,7 @@ export type Database = {
           id?: string
           joined_at?: string
           nickname?: string
-          status?: Database['public']['Enums']['profile_status']
+          status?: Database["public"]["Enums"]["profile_status"]
           xp_points?: number
         }
         Relationships: []
@@ -203,18 +238,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'profile_achievement_achievement_id_fkey'
-            columns: ['achievement_id']
+            foreignKeyName: "profile_achievement_achievement_id_fkey"
+            columns: ["achievement_id"]
             isOneToOne: false
-            referencedRelation: 'achievement'
-            referencedColumns: ['id']
+            referencedRelation: "achievement"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'profile_achievement_profile_id_fkey'
-            columns: ['profile_id']
+            foreignKeyName: "profile_achievement_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: 'profile'
-            referencedColumns: ['id']
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -236,18 +271,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'profile_interest_interest_id_fkey'
-            columns: ['interest_id']
+            foreignKeyName: "profile_interest_interest_id_fkey"
+            columns: ["interest_id"]
             isOneToOne: false
-            referencedRelation: 'interest'
-            referencedColumns: ['id']
+            referencedRelation: "interest"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'profile_interest_profile_id_fkey'
-            columns: ['profile_id']
+            foreignKeyName: "profile_interest_profile_id_fkey"
+            columns: ["profile_id"]
             isOneToOne: false
-            referencedRelation: 'profile'
-            referencedColumns: ['id']
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -281,11 +316,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'quest_theme_id_fkey'
-            columns: ['theme_id']
+            foreignKeyName: "quest_theme_id_fkey"
+            columns: ["theme_id"]
             isOneToOne: false
-            referencedRelation: 'jaunt_theme'
-            referencedColumns: ['id']
+            referencedRelation: "jaunt_theme"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -322,42 +357,67 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'review_jaunt_id_fkey'
-            columns: ['jaunt_id']
+            foreignKeyName: "review_jaunt_id_fkey"
+            columns: ["jaunt_id"]
             isOneToOne: false
-            referencedRelation: 'jaunt'
-            referencedColumns: ['id']
+            referencedRelation: "jaunt"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'review_reviewee_id_fkey'
-            columns: ['reviewee_id']
+            foreignKeyName: "review_reviewee_id_fkey"
+            columns: ["reviewee_id"]
             isOneToOne: false
-            referencedRelation: 'profile'
-            referencedColumns: ['id']
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'review_reviewer_id_fkey'
-            columns: ['reviewer_id']
+            foreignKeyName: "review_reviewer_id_fkey"
+            columns: ["reviewer_id"]
             isOneToOne: false
-            referencedRelation: 'profile'
-            referencedColumns: ['id']
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
           },
         ]
       }
     }
-    Views: Record<string, never>
-    Functions: Record<string, never>
-    Enums: {
-      jaunt_status: 'pending' | 'active' | 'completed' | 'dropped'
-      participation_status: 'waiting' | 'active' | 'completed' | 'dropped'
-      profile_status: 'idle' | 'busy'
+    Views: {
+      [_ in never]: never
     }
-    CompositeTypes: Record<string, never>
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      jaunt_status: "pending" | "active" | "completed" | "dropped"
+      participation_status: "waiting" | "active" | "completed" | "dropped"
+      profile_status: "idle" | "busy"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
 }
 
-export type Tables<T extends keyof Database['public']['Tables']> =
-  Database['public']['Tables'][T]['Row']
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
-export type Enums<T extends keyof Database['public']['Enums']> =
-  Database['public']['Enums'][T]
+export type Tables<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Row"]
+
+export type Enums<T extends keyof Database["public"]["Enums"]> =
+  Database["public"]["Enums"][T]
+
+export type TablesInsert<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Insert"]
+
+export type TablesUpdate<T extends keyof Database["public"]["Tables"]> =
+  Database["public"]["Tables"][T]["Update"]
+
+export const Constants = {
+  public: {
+    Enums: {
+      jaunt_status: ["pending", "active", "completed", "dropped"],
+      participation_status: ["waiting", "active", "completed", "dropped"],
+      profile_status: ["idle", "busy"],
+    },
+  },
+} as const
