@@ -40,8 +40,11 @@ function formatTime(iso: string | null) {
         aria-label="Mon profil"
         @click="router.push({ name: 'profile' })"
       >
-        <span class="avatar-head" aria-hidden="true" />
-        <span class="avatar-shoulders" aria-hidden="true" />
+        <img v-if="auth.profile?.avatar_url" :src="auth.profile.avatar_url" alt="" class="avatar-photo" />
+        <template v-else>
+          <span class="avatar-head" aria-hidden="true" />
+          <span class="avatar-shoulders" aria-hidden="true" />
+        </template>
       </button>
     </header>
 
@@ -206,6 +209,14 @@ function formatTime(iso: string | null) {
   border-radius: var(--radius-full);
   background: var(--color-primary);
   top: 8px;
+}
+
+.avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  inset: 0;
 }
 
 .avatar-shoulders {

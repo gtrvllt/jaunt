@@ -75,8 +75,11 @@ onMounted(async () => {
       <!-- Avatar + infos -->
       <div class="profile-header">
         <div class="avatar" aria-label="Avatar de profil">
-          <span class="avatar-head" aria-hidden="true" />
-          <span class="avatar-shoulders" aria-hidden="true" />
+          <img v-if="auth.profile.avatar_url" :src="auth.profile.avatar_url" alt="" class="avatar-photo" />
+          <template v-else>
+            <span class="avatar-head" aria-hidden="true" />
+            <span class="avatar-shoulders" aria-hidden="true" />
+          </template>
         </div>
         <div class="profile-info">
           <h1 class="nickname">{{ auth.profile.nickname }}</h1>
@@ -128,6 +131,7 @@ onMounted(async () => {
 /* Header profil */
 .profile-header { display: flex; align-items: center; gap: var(--space-5); background: var(--color-primary); border-radius: var(--radius-md); padding: var(--space-5); }
 .avatar { width: 64px; height: 64px; border-radius: var(--radius-full); background: rgba(255,255,255,0.2); flex-shrink: 0; position: relative; overflow: hidden; display: flex; align-items: flex-start; justify-content: center; }
+.avatar-photo { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; }
 .avatar-head { position: absolute; width: 22px; height: 22px; border-radius: var(--radius-full); background: #fff; top: 12px; }
 .avatar-shoulders { position: absolute; width: 44px; height: 26px; background: #fff; border-radius: 22px 22px 0 0; bottom: 0; }
 .profile-info { display: flex; flex-direction: column; gap: var(--space-1); }
