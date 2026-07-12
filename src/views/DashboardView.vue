@@ -1,16 +1,28 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useProfileStore } from '@/stores/profile'
 import { useJaunt } from '@/composables/useJaunt'
 import { useSocialProof } from '@/composables/useSocialProof'
 
 const router = useRouter()
 const auth = useAuthStore()
+const profile = useProfileStore()
 const { activeJaunt, loading, error, currentTip, nextTip, fetchActiveJaunt, joinQueue, leaveQueue } = useJaunt()
 const { stats, fetchStats } = useSocialProof()
 
-onMounted(() => { fetchActiveJaunt(); fetchStats() })
+const MIN_INTERESTS = 3
+const hasAvatar = computed(() => !!auth.profile?.avatar_url)
+const hasEnoughInterests = computed(() => profile.interestCount >= MIN_INTERESTS)
+const completionScore = computed(() => [hasEnoughInterests.value, hasAvatar.value].filter(Boolean).length)
+const isProfileComplete = computed(() => completionScore.value === 2)
+
+onMounted(() => {
+  fetchActiveJaunt()
+  fetchStats()
+  if (auth.session) profile.fetchSelectedInterests(auth.session.user.id)
+})
 
 function formatTime(iso: string | null) {
   if (!iso) return '—'
@@ -83,6 +95,37 @@ function formatTime(iso: string | null) {
         >
           Rejoindre la Jaunt
         </button>
+      </div>
+
+      <!-- Profile completion nudge -->
+      <div
+        v-if="!activeJaunt"
+        class="profile-card"
+        :class="{ 'profile-card--complete': isProfileComplete }"
+        role="button"
+        tabindex="0"
+        @click="router.push({ name: 'profile-edit' })"
+        @keydown.enter="router.push({ name: 'profile-edit' })"
+      >
+        <div class="profile-card-top">
+          <span class="profile-card-icon" aria-hidden="true">{{ isProfileComplete ? '✅' : '⚡' }}</span>
+          <div class="profile-card-text">
+            <p v-if="isProfileComplete" class="profile-card-title">Profil optimisé pour le matching !</p>
+            <p v-else class="profile-card-title">Optimise tes chances d'invitation</p>
+            <p v-if="!isProfileComplete" class="profile-card-sub">Mettre tes intérêts à jour aide à trouver le bon groupe.</p>
+          </div>
+          <span class="profile-card-chevron" aria-hidden="true">›</span>
+        </div>
+
+        <div v-if="!isProfileComplete" class="profile-progress">
+          <div class="progress-bar">
+            <div class="progress-fill" :style="{ width: (completionScore / 2 * 100) + '%' }" />
+          </div>
+          <p class="progress-items">
+            <span :class="hasEnoughInterests ? 'item--done' : 'item--todo'">{{ hasEnoughInterests ? '✓' : '○' }} Centres d'intérêt</span>
+            <span :class="hasAvatar ? 'item--done' : 'item--todo'">{{ hasAvatar ? '✓' : '○' }} Photo de profil</span>
+          </p>
+        </div>
       </div>
 
       <!-- Social proof stats -->
@@ -410,6 +453,78 @@ function formatTime(iso: string | null) {
 }
 
 .btn-join:hover { opacity: 0.9; }
+
+/* Profile completion */
+.profile-card {
+  background: var(--color-gray-bg);
+  border-radius: var(--radius-md);
+  padding: var(--space-4) var(--space-5);
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: border-color 0.15s;
+}
+
+.profile-card:hover { border-color: var(--color-primary); }
+
+.profile-card--complete {
+  background: #f0fdf4;
+  border-color: var(--color-success);
+}
+
+.profile-card-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.profile-card-icon { font-size: 20px; flex-shrink: 0; }
+
+.profile-card-text { flex: 1; }
+
+.profile-card-title {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--text-base);
+  color: var(--color-dark);
+}
+
+.profile-card-sub {
+  font-size: var(--text-xs);
+  color: var(--color-gray-text);
+  margin-top: 2px;
+  line-height: var(--line-height-base);
+}
+
+.profile-card-chevron {
+  font-size: 20px;
+  color: var(--color-gray-text);
+  flex-shrink: 0;
+}
+
+.profile-progress { margin-top: var(--space-3); }
+
+.progress-bar {
+  height: 6px;
+  background: var(--color-gray-border);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  margin-bottom: var(--space-2);
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
+  transition: width 0.4s ease;
+}
+
+.progress-items {
+  display: flex;
+  gap: var(--space-4);
+  font-size: var(--text-xs);
+}
+
+.item--done { color: var(--color-success); }
+.item--todo { color: var(--color-gray-text); }
 
 /* Social proof */
 .stats-card {
