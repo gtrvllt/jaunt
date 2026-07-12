@@ -1,0 +1,85 @@
+/* =============================================================================
+   Jaunt Design Tokens
+   Source of truth: Figma file wM53wquVvlu35hBYh34u5Z
+   ============================================================================= */
+
+:root {
+  /* ── Couleurs principales ─────────────────────────────────────────────────── */
+  --color-primary:        #5856D6; /* violet Jaunt — actions, CTA, actif */
+  --color-primary-light:  #EAE9FB; /* violet pâle — pills suggérées, hover */
+  --color-primary-dark:   #3D3BBF; /* violet foncé — pressed state */
+
+  /* ── Couleurs neutres ─────────────────────────────────────────────────────── */
+  --color-dark:           #1A1A1A; /* texte principal */
+  --color-dark-2:         #2C2C2E; /* boutons sombres (ex: Return to Dashboard) */
+  --color-gray-bg:        #F2F2F7; /* fond des cards, inputs, avatar */
+  --color-gray-border:    #E5E5EA; /* bordures, séparateurs */
+  --color-gray-text:      #8A8A8E; /* texte secondaire, labels */
+  --color-gray-placeholder: #AEAEB2; /* placeholders */
+
+  /* ── Couleurs sémantiques ─────────────────────────────────────────────────── */
+  --color-success:        #32D74B; /* toast confirmation, quête validée */
+  --color-error:          #FF3B30; /* erreurs, logout */
+  --color-info:           #64D2FF; /* badge spécial (Urban Explorer) */
+
+  /* ── Typographie ──────────────────────────────────────────────────────────── */
+  --font-brand:           'Sora', sans-serif;   /* logo, titres, headings */
+  --font-body:            'Inter', sans-serif;  /* tout le reste */
+
+  --text-xs:    11px; /* mentions légales */
+  --text-sm:    12px; /* labels secondaires, section headers */
+  --text-base:  13px; /* body par défaut, pills */
+  --text-md:    14px; /* sous-titres, descriptions */
+  --text-lg:    15px; /* logo appbar, boutons */
+  --text-xl:    16px; /* boutons principaux */
+  --text-2xl:   18px; /* appbar JAUNT, titres de section */
+  --text-3xl:   22px; /* titres d'écran (auth) */
+  --text-4xl:   26px; /* titres d'écran (onboarding) */
+  --text-5xl:   30px; /* grands titres (afterjaunt) */
+
+  --font-weight-regular:   400;
+  --font-weight-medium:    500;
+  --font-weight-semibold:  600;
+  --font-weight-bold:      700;
+
+  --line-height-tight:   1.2;
+  --line-height-base:    1.4;
+  --line-height-relaxed: 1.6;
+
+  --letter-spacing-logo:  5px;  /* JAUNT dans l'appbar */
+  --letter-spacing-label: 1.5px; /* labels uppercase */
+
+  /* ── Espacements ──────────────────────────────────────────────────────────── */
+  --space-1:   4px;
+  --space-2:   8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;  /* marge horizontale standard des écrans */
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── Rayons de bordure ────────────────────────────────────────────────────── */
+  --radius-sm:   2px;  /* pills */
+  --radius-md:   8px;  /* cards photos, stats panel */
+  --radius-lg:  12px;  /* toasts, mail card */
+  --radius-xl:  14px;  /* boutons principaux */
+  --radius-2xl: 16px;  /* logo box */
+  --radius-full: 9999px; /* avatar, badges ronds */
+
+  /* ── Composants ───────────────────────────────────────────────────────────── */
+  --height-appbar:    64px;
+  --height-btn:       56px;  /* boutons primaires */
+  --height-input:     56px;  /* champs de saisie */
+  --height-pill:      36px;  /* pills d'intérêts */
+  --height-card-nav:  83px;  /* ancienne bottom nav (supprimée) */
+
+  --width-screen:    390px;  /* largeur cible mobile */
+  --height-screen:   844px;  /* hauteur cible mobile */
+
+  /* ── Ombres ───────────────────────────────────────────────────────────────── */
+  --shadow-card:    0 4px 16px rgba(0, 0, 0, 0.10);
+  --shadow-primary: 0 4px 10px rgba(88, 86, 214, 0.40);
+  --shadow-overlay: 0 -4px 16px rgba(0, 0, 0, 0.10); /* overlay cards remontant */
+}

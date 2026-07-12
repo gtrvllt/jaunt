@@ -6,6 +6,11 @@ Vérifie la cohérence visuelle et fonctionnelle des composants Vue modifiés ou
 
 Avant d'ouvrir une PR contenant des changements de composants ou de vues.
 
+## Référence design
+
+- **Figma** : `wM53wquVvlu35hBYh34u5Z` (page "zoning")
+- **Design tokens** : `src/assets/tokens.css` — source de vérité pour toutes les valeurs visuelles
+
 ## Étapes
 
 1. **Identifier les fichiers UI modifiés**
@@ -40,6 +45,18 @@ Avant d'ouvrir une PR contenant des changements de composants ou de vues.
    - Les images ont-elles un `alt`?
    - Les boutons sans texte visible ont-ils un `aria-label` ?
    - Les formulaires ont-ils des `<label>` associés ?
+
+   **Design tokens (Option C — vérification automatique)**
+   Lire `src/assets/tokens.css` puis grep les fichiers modifiés :
+   ```bash
+   grep -E '#[0-9a-fA-F]{3,6}|font-size\s*:\s*[0-9]+px|border-radius\s*:\s*[0-9]+px' <fichiers modifiés>
+   ```
+   - Toute couleur hardcodée (`#5856D6`, `#1A1A1A`, etc.) doit être remplacée par le token correspondant (`var(--color-primary)`, `var(--color-dark)`)
+   - Toute taille de texte hardcodée doit utiliser `var(--text-*)` 
+   - Tout `border-radius` hardcodé doit utiliser `var(--radius-*)`
+   - Les boutons principaux doivent avoir `min-height: var(--height-btn)` (56px)
+   - Les inputs doivent avoir `min-height: var(--height-input)` (56px)
+   - La marge horizontale des écrans doit être `var(--space-6)` (24px)
 
 3. **Produire un rapport :**
    - ✅ Composants conformes
