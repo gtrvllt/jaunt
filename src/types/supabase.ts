@@ -127,6 +127,8 @@ export type Database = {
           description: string | null
           difficulty: number
           id: string
+          image_url: string | null
+          location_label: string | null
           title: string
         }
         Insert: {
@@ -134,6 +136,8 @@ export type Database = {
           description?: string | null
           difficulty: number
           id?: string
+          image_url?: string | null
+          location_label?: string | null
           title: string
         }
         Update: {
@@ -141,6 +145,8 @@ export type Database = {
           description?: string | null
           difficulty?: number
           id?: string
+          image_url?: string | null
+          location_label?: string | null
           title?: string
         }
         Relationships: []

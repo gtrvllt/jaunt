@@ -9,7 +9,7 @@ import { useSocialProof } from '@/composables/useSocialProof'
 const router = useRouter()
 const auth = useAuthStore()
 const profile = useProfileStore()
-const { activeJaunt, loading, error, currentTip, nextTip, fetchActiveJaunt, joinQueue, leaveQueue } = useJaunt()
+const { activeJaunt, loading, error, currentTip, nextTip, fetchActiveJaunt, subscribeToInvitation, joinQueue, leaveQueue } = useJaunt()
 const { stats, fetchStats } = useSocialProof()
 
 const MIN_INTERESTS = 3
@@ -21,6 +21,7 @@ const isProfileComplete = computed(() => completionScore.value === 2)
 onMounted(() => {
   fetchActiveJaunt()
   fetchStats()
+  subscribeToInvitation()
   if (auth.session) profile.fetchSelectedInterests(auth.session.user.id)
 })
 
@@ -80,18 +81,47 @@ function formatTime(iso: string | null) {
         <button class="btn-join-queue" @click="joinQueue">Trouver une Jaunt</button>
       </div>
 
-      <!-- Jaunt active -->
-      <div v-else class="hero-card">
-        <p class="hero-label">NEXT JAUNT</p>
-        <p class="hero-time">Starting at {{ formatTime(activeJaunt.jaunt.scheduled_at) }}</p>
-
-        <div class="status-chip" :class="`status-chip--${activeJaunt.status}`">
-          {{ activeJaunt.status === 'waiting' ? 'En attente' : 'En cours' }}
+      <!-- Invitation reçue (statut waiting) -->
+      <div v-else-if="activeJaunt.status === 'waiting'" class="invitation-card">
+        <div
+          class="invitation-img"
+          :style="activeJaunt.jaunt.jaunt_theme.image_url
+            ? { backgroundImage: `url(${activeJaunt.jaunt.jaunt_theme.image_url})` }
+            : {}"
+        >
+          <div class="invitation-overlay" />
+          <span class="invitation-badge">✨ Invitation</span>
         </div>
 
+        <div class="invitation-body">
+          <div class="invitation-meta">
+            <span v-if="activeJaunt.jaunt.jaunt_theme.location_label" class="invitation-location">
+              📍 {{ activeJaunt.jaunt.jaunt_theme.location_label }}
+            </span>
+            <span v-if="activeJaunt.jaunt.scheduled_at" class="invitation-time">
+              🕐 {{ formatTime(activeJaunt.jaunt.scheduled_at) }}
+            </span>
+          </div>
+
+          <h3 class="invitation-title">{{ activeJaunt.jaunt.jaunt_theme.title }}</h3>
+          <p class="invitation-desc">{{ activeJaunt.jaunt.jaunt_theme.description }}</p>
+
+          <button
+            class="btn-discover"
+            @click="router.push({ name: 'jaunt-before', params: { id: activeJaunt.jaunt_id } })"
+          >
+            Découvrir →
+          </button>
+        </div>
+      </div>
+
+      <!-- Jaunt en cours (statut active) -->
+      <div v-else class="hero-card">
+        <p class="hero-label">EN COURS</p>
+        <p class="hero-time">{{ formatTime(activeJaunt.jaunt.scheduled_at) }}</p>
+        <div class="status-chip status-chip--active">En cours</div>
         <h3 class="hero-theme">{{ activeJaunt.jaunt.jaunt_theme.title }}</h3>
         <p class="hero-desc">{{ activeJaunt.jaunt.jaunt_theme.description }}</p>
-
         <button
           class="btn-join"
           @click="router.push({ name: 'jaunt-before', params: { id: activeJaunt.jaunt_id } })"
@@ -464,6 +494,94 @@ function formatTime(iso: string | null) {
 }
 
 .btn-join:hover { opacity: 0.9; }
+
+/* Invitation card */
+.invitation-card {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1.5px solid var(--color-gray-border);
+}
+
+.invitation-img {
+  height: 160px;
+  background: var(--color-primary-light);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  padding: var(--space-4);
+}
+
+.invitation-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(0,0,0,0.5));
+}
+
+.invitation-badge {
+  position: relative;
+  z-index: 1;
+  background: var(--color-primary);
+  color: #fff;
+  font-size: var(--text-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-label);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+}
+
+.invitation-body {
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.invitation-meta {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.invitation-location,
+.invitation-time {
+  font-size: var(--text-xs);
+  color: var(--color-gray-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.invitation-title {
+  font-family: var(--font-brand);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--text-2xl);
+  color: var(--color-dark);
+  line-height: 1.2;
+}
+
+.invitation-desc {
+  font-size: var(--text-base);
+  color: var(--color-gray-text);
+  line-height: var(--line-height-base);
+}
+
+.btn-discover {
+  width: 100%;
+  height: var(--height-btn);
+  background: var(--color-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-xl);
+  font-family: var(--font-body);
+  font-size: var(--text-lg);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  box-shadow: var(--shadow-primary);
+  transition: opacity 0.15s;
+  margin-top: var(--space-1);
+}
+
+.btn-discover:hover { opacity: 0.9; }
 
 /* Profile completion */
 .profile-card {

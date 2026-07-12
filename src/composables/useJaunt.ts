@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, onUnmounted } from 'vue'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 import type { Database } from '@/types/supabase'
@@ -55,6 +55,20 @@ export function useJaunt() {
     activeJaunt.value = data as ActiveJaunt | null
   }
 
+  function subscribeToInvitation() {
+    if (!auth.session) return
+    const userId = auth.session.user.id
+    const channel = supabase
+      .channel(`invitation-${userId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'participation', filter: `profile_id=eq.${userId}` },
+        () => { fetchActiveJaunt() },
+      )
+      .subscribe()
+    onUnmounted(() => { supabase.removeChannel(channel) })
+  }
+
   async function joinQueue() {
     if (!auth.session) return
     const { error: err } = await supabase
@@ -75,5 +89,5 @@ export function useJaunt() {
     if (auth.profile) auth.profile.status = 'idle'
   }
 
-  return { activeJaunt, loading, error, currentTip, nextTip, fetchActiveJaunt, joinQueue, leaveQueue }
+  return { activeJaunt, loading, error, currentTip, nextTip, fetchActiveJaunt, subscribeToInvitation, joinQueue, leaveQueue }
 }
