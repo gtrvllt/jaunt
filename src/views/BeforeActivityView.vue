@@ -6,12 +6,16 @@ import { useCountdown } from '@/composables/useCountdown'
 
 const route = useRoute()
 const jauntId = route.params.id as string
-const { participation, participantCount, MAX_PARTICIPANTS, loading, error, validating, confirming, fetch, confirmParticipation, startJaunt } = useParticipation(jauntId)
+const { participation, participantCount, coAdventurers, MAX_PARTICIPANTS, loading, error, validating, confirming, fetch, subscribeToParticipants, confirmParticipation, startJaunt } = useParticipation(jauntId)
 
 const scheduledAt = computed(() => participation.value?.jaunt.scheduled_at ?? null)
 const { hours, minutes, seconds, isExpired } = useCountdown(scheduledAt.value)
 
-onMounted(fetch)
+function initials(nickname: string) {
+  return nickname.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+}
+
+onMounted(() => { fetch(); subscribeToParticipants() })
 </script>
 
 <template>
@@ -96,6 +100,29 @@ onMounted(fetch)
         </p>
       </div>
 
+      <!-- Co-aventuriers (visible après confirmation) -->
+      <div
+        v-if="participation.status !== 'waiting' && coAdventurers.length > 0"
+        class="co-section"
+        aria-label="Tes co-aventuriers"
+      >
+        <p class="co-title">TES CO-AVENTURIERS</p>
+        <div class="co-list">
+          <div v-for="person in coAdventurers" :key="person.profile_id" class="co-card">
+            <div class="co-avatar" :aria-label="`Initiales de ${person.nickname}`">
+              {{ initials(person.nickname) }}
+            </div>
+            <div class="co-info">
+              <p class="co-name">{{ person.nickname }}</p>
+              <p v-if="person.shared_interest" class="co-interest">
+                <span aria-hidden="true">✦</span> En commun : {{ person.shared_interest }}
+              </p>
+              <p v-else class="co-interest co-interest--none">Intérêts à découvrir…</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Zone floue (mystery map) -->
       <div class="zone-card" aria-label="Zone de rendez-vous approximative">
         <div class="zone-label-row">
@@ -178,6 +205,17 @@ onMounted(fetch)
 .digit { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: 48px; color: var(--color-dark); line-height: 1; min-width: 56px; text-align: center; }
 .digit-label { font-size: var(--text-xs); color: var(--color-gray-text); letter-spacing: var(--letter-spacing-label); }
 .colon { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: 40px; color: var(--color-gray-text); line-height: 1; margin-bottom: var(--space-4); }
+
+/* Co-adventurers */
+.co-section { display: flex; flex-direction: column; gap: var(--space-3); }
+.co-title { font-size: var(--text-xs); font-weight: var(--font-weight-semibold); letter-spacing: var(--letter-spacing-label); color: var(--color-gray-text); }
+.co-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.co-card { display: flex; align-items: center; gap: var(--space-4); background: var(--color-gray-bg); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); }
+.co-avatar { width: 44px; height: 44px; border-radius: var(--radius-full); background: var(--color-primary-light); color: var(--color-primary); font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-base); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.co-info { flex: 1; }
+.co-name { font-weight: var(--font-weight-semibold); font-size: var(--text-base); color: var(--color-dark); }
+.co-interest { font-size: var(--text-sm); color: var(--color-primary); margin-top: 2px; font-weight: var(--font-weight-semibold); }
+.co-interest--none { color: var(--color-gray-text); font-weight: var(--font-weight-normal); font-style: italic; }
 
 /* Zone card */
 .zone-card { background: var(--color-gray-bg); border-radius: var(--radius-md); overflow: hidden; }

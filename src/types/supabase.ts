@@ -398,6 +398,10 @@ export type Database = {
         Args: { jaunt_id: string }
         Returns: number
       }
+      get_jaunt_co_adventurers: {
+        Args: { p_jaunt_id: string }
+        Returns: Json
+      }
     }
     Enums: {
       jaunt_status: "pending" | "active" | "completed" | "dropped"

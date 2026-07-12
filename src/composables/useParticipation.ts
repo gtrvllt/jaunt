@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
@@ -22,8 +22,16 @@ export function useParticipation(jauntId: string) {
   const auth = useAuthStore()
   const { track } = useTrack()
 
+  interface CoAdventurer {
+    profile_id: string
+    nickname: string
+    status: string
+    shared_interest: string | null
+  }
+
   const participation = ref<FullParticipation | null>(null)
   const participantCount = ref(0)
+  const coAdventurers = ref<CoAdventurer[]>([])
   const loading = ref(false)
   const error = ref<string | null>(null)
   const validating = ref(false)
@@ -62,9 +70,25 @@ export function useParticipation(jauntId: string) {
     }
     participation.value = full
 
-    // Fetch participant count in background
-    const { data: countData } = await supabase.rpc('get_jaunt_participant_count', { jaunt_id: jauntId })
+    // Fetch participant count + co-adventurers in background
+    const [{ data: countData }, { data: coData }] = await Promise.all([
+      supabase.rpc('get_jaunt_participant_count', { jaunt_id: jauntId }),
+      supabase.rpc('get_jaunt_co_adventurers', { p_jaunt_id: jauntId }),
+    ])
     if (countData !== null) participantCount.value = countData as number
+    if (coData) coAdventurers.value = coData as unknown as CoAdventurer[]
+  }
+
+  function subscribeToParticipants() {
+    const channel = supabase
+      .channel(`jaunt-participants-${jauntId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'participation', filter: `jaunt_id=eq.${jauntId}` },
+        () => { fetch() },
+      )
+      .subscribe()
+    onUnmounted(() => { supabase.removeChannel(channel) })
   }
 
   async function confirmParticipation() {
@@ -127,5 +151,5 @@ export function useParticipation(jauntId: string) {
     }
   }
 
-  return { participation, participantCount, MAX_PARTICIPANTS, loading, error, validating, confirming, fetch, confirmParticipation, startJaunt, validateStep }
+  return { participation, participantCount, coAdventurers, MAX_PARTICIPANTS, loading, error, validating, confirming, fetch, subscribeToParticipants, confirmParticipation, startJaunt, validateStep }
 }
