@@ -88,18 +88,18 @@ function formatTime(iso: string | null) {
       <!-- Social proof stats -->
       <div v-if="!activeJaunt && stats" class="stats-card">
         <div class="stat-item">
-          <span class="stat-icon" aria-hidden="true">🥾</span>
+          <span class="stat-icon" aria-hidden="true">🔍</span>
           <div class="stat-body">
-            <span class="stat-value">{{ stats.active_members }}</span>
-            <span class="stat-label">explorateur{{ stats.active_members !== 1 ? 's' : '' }} en balade maintenant</span>
+            <span class="stat-value">{{ stats.searching_this_week }}</span>
+            <span class="stat-label">personne{{ stats.searching_this_week !== 1 ? 's' : '' }} en recherche cette semaine</span>
           </div>
         </div>
         <div class="stat-divider" />
         <div class="stat-item">
-          <span class="stat-icon" aria-hidden="true">⚡</span>
+          <span class="stat-icon" aria-hidden="true">🗺️</span>
           <div class="stat-body">
-            <span class="stat-value">{{ stats.matches_today }}</span>
-            <span class="stat-label">jaunt{{ stats.matches_today !== 1 ? 's' : '' }} lancée{{ stats.matches_today !== 1 ? 's' : '' }} aujourd'hui</span>
+            <span class="stat-value">{{ stats.jaunts_this_week }}</span>
+            <span class="stat-label">jaunt{{ stats.jaunts_this_week !== 1 ? 's' : '' }} cette semaine</span>
           </div>
         </div>
       </div>

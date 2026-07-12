@@ -2,9 +2,8 @@ import { ref, onUnmounted } from 'vue'
 import { supabase } from '@/lib/supabase'
 
 interface ClubStats {
-  active_members: number
-  matches_today: number
-  total_jaunts_completed: number
+  searching_this_week: number
+  jaunts_this_week: number
 }
 
 export function useSocialProof() {
