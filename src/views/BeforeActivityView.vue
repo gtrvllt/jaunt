@@ -6,7 +6,7 @@ import { useCountdown } from '@/composables/useCountdown'
 
 const route = useRoute()
 const jauntId = route.params.id as string
-const { participation, loading, error, validating, fetch, startJaunt } = useParticipation(jauntId)
+const { participation, participantCount, MAX_PARTICIPANTS, loading, error, validating, confirming, fetch, confirmParticipation, startJaunt } = useParticipation(jauntId)
 
 const scheduledAt = computed(() => participation.value?.jaunt.scheduled_at ?? null)
 const { hours, minutes, seconds, isExpired } = useCountdown(scheduledAt.value)
@@ -80,6 +80,22 @@ onMounted(fetch)
         </div>
       </div>
 
+      <!-- Compteur participants -->
+      <div class="participants-row" aria-label="Participants confirmés">
+        <div class="participants-dots">
+          <span
+            v-for="i in MAX_PARTICIPANTS"
+            :key="i"
+            class="dot"
+            :class="i <= participantCount ? 'dot--filled' : 'dot--empty'"
+            :aria-label="i <= participantCount ? 'Participant confirmé' : 'Place disponible'"
+          />
+        </div>
+        <p class="participants-label">
+          {{ participantCount }} / {{ MAX_PARTICIPANTS }} confirmé{{ participantCount !== 1 ? 's' : '' }}
+        </p>
+      </div>
+
       <!-- Zone floue (mystery map) -->
       <div class="zone-card" aria-label="Zone de rendez-vous approximative">
         <div class="zone-label-row">
@@ -105,12 +121,35 @@ onMounted(fetch)
     </main>
 
     <footer v-if="participation" class="footer">
-      <button class="btn-cancel" :disabled="validating" @click="$router.push({ name: 'dashboard' })">
-        Annuler
-      </button>
-      <button class="btn-start" :disabled="validating || !isExpired" @click="startJaunt">
-        {{ validating ? 'Démarrage…' : isExpired ? 'Démarrer la Jaunt' : 'En attente du départ' }}
-      </button>
+      <!-- Invitation reçue → confirmer -->
+      <template v-if="participation.status === 'waiting'">
+        <button class="btn-cancel" @click="$router.push({ name: 'dashboard' })">Pas cette fois</button>
+        <button
+          class="btn-confirm"
+          :disabled="confirming || participantCount >= MAX_PARTICIPANTS"
+          @click="confirmParticipation"
+        >
+          {{ confirming ? 'Confirmation…' : participantCount >= MAX_PARTICIPANTS ? 'Complet' : "Je suis partant !" }}
+        </button>
+      </template>
+
+      <!-- Confirmé → feedback + attente départ -->
+      <template v-else-if="participation.status === 'confirmed'">
+        <div class="confirmed-banner" role="status">
+          <span aria-hidden="true">🚀</span>
+          <div>
+            <p class="confirmed-title">Tu es dans le groupe !</p>
+            <p class="confirmed-sub">Reviens au moment du départ pour démarrer.</p>
+          </div>
+        </div>
+      </template>
+
+      <!-- Démarrer (isExpired + confirmed/active) -->
+      <template v-if="['confirmed', 'active'].includes(participation.status) && isExpired">
+        <button class="btn-start" :disabled="validating" @click="startJaunt">
+          {{ validating ? 'Démarrage…' : 'Démarrer la Jaunt' }}
+        </button>
+      </template>
     </footer>
   </div>
 </template>
@@ -148,12 +187,28 @@ onMounted(fetch)
 .zone-map { background: #f0f0f0; }
 .zone-svg { width: 100%; display: block; }
 
+/* Participants */
+.participants-row { display: flex; align-items: center; gap: var(--space-3); }
+.participants-dots { display: flex; gap: var(--space-2); }
+.dot { width: 14px; height: 14px; border-radius: var(--radius-full); transition: background 0.2s; }
+.dot--filled { background: var(--color-primary); }
+.dot--empty { background: var(--color-gray-border); }
+.participants-label { font-size: var(--text-sm); color: var(--color-gray-text); font-weight: var(--font-weight-semibold); }
+
 /* Footer */
-.footer { flex-shrink: 0; padding: var(--space-5) var(--space-6) var(--space-8); display: flex; gap: var(--space-3); border-top: 1px solid var(--color-gray-border); }
-.btn-cancel { flex: 1; height: var(--height-btn); background: #fff; border: 1px solid var(--color-gray-border); color: var(--color-dark); border-radius: var(--radius-xl); font-family: var(--font-body); font-size: var(--text-lg); font-weight: var(--font-weight-semibold); cursor: pointer; }
-.btn-start { flex: 2; height: var(--height-btn); background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-xl); font-family: var(--font-body); font-size: var(--text-base); font-weight: var(--font-weight-semibold); cursor: pointer; transition: opacity 0.15s; }
+.footer { flex-shrink: 0; padding: var(--space-5) var(--space-6) var(--space-8); display: flex; flex-direction: column; gap: var(--space-3); border-top: 1px solid var(--color-gray-border); }
+.btn-cancel { height: var(--height-btn); background: #fff; border: 1px solid var(--color-gray-border); color: var(--color-gray-text); border-radius: var(--radius-xl); font-family: var(--font-body); font-size: var(--text-base); font-weight: var(--font-weight-semibold); cursor: pointer; }
+.btn-confirm { height: var(--height-btn); background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-xl); font-family: var(--font-body); font-size: var(--text-lg); font-weight: var(--font-weight-bold); cursor: pointer; box-shadow: var(--shadow-primary); transition: opacity 0.15s; }
+.btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
+.btn-confirm:not(:disabled):hover { opacity: 0.9; }
+.btn-start { height: var(--height-btn); background: var(--color-dark); color: #fff; border: none; border-radius: var(--radius-xl); font-family: var(--font-body); font-size: var(--text-base); font-weight: var(--font-weight-semibold); cursor: pointer; transition: opacity 0.15s; }
 .btn-start:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-start:not(:disabled):hover { opacity: 0.9; }
+
+/* Confirmation banner */
+.confirmed-banner { display: flex; align-items: flex-start; gap: var(--space-3); background: #f0fdf4; border: 1.5px solid var(--color-success); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); font-size: 24px; }
+.confirmed-title { font-weight: var(--font-weight-bold); color: var(--color-dark); font-size: var(--text-base); }
+.confirmed-sub { font-size: var(--text-sm); color: var(--color-gray-text); margin-top: 2px; }
 
 .state-card { background: var(--color-gray-bg); border-radius: var(--radius-md); padding: var(--space-6); text-align: center; color: var(--color-gray-text); font-size: var(--text-md); }
 .state-card--error { background: #fff0ef; color: var(--color-error); }

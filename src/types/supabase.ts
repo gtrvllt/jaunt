@@ -394,10 +394,14 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_jaunt_participant_count: {
+        Args: { jaunt_id: string }
+        Returns: number
+      }
     }
     Enums: {
       jaunt_status: "pending" | "active" | "completed" | "dropped"
-      participation_status: "waiting" | "active" | "completed" | "dropped"
+      participation_status: "waiting" | "confirmed" | "active" | "completed" | "dropped"
       profile_status: "idle" | "busy"
     }
     CompositeTypes: {
@@ -425,7 +429,7 @@ export const Constants = {
   public: {
     Enums: {
       jaunt_status: ["pending", "active", "completed", "dropped"],
-      participation_status: ["waiting", "active", "completed", "dropped"],
+      participation_status: ["waiting", "confirmed", "active", "completed", "dropped"],
       profile_status: ["idle", "busy"],
     },
   },

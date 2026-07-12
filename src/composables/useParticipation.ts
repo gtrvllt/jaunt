@@ -23,9 +23,13 @@ export function useParticipation(jauntId: string) {
   const { track } = useTrack()
 
   const participation = ref<FullParticipation | null>(null)
+  const participantCount = ref(0)
   const loading = ref(false)
   const error = ref<string | null>(null)
   const validating = ref(false)
+  const confirming = ref(false)
+
+  const MAX_PARTICIPANTS = 4
 
   async function fetch() {
     if (!auth.session) return
@@ -57,6 +61,27 @@ export function useParticipation(jauntId: string) {
       full.jaunt.quests.sort((a, b) => a.sequence_order - b.sequence_order)
     }
     participation.value = full
+
+    // Fetch participant count in background
+    const { data: countData } = await supabase.rpc('get_jaunt_participant_count', { jaunt_id: jauntId })
+    if (countData !== null) participantCount.value = countData as number
+  }
+
+  async function confirmParticipation() {
+    if (!auth.session || !participation.value) return
+    confirming.value = true
+    error.value = null
+
+    const { error: err } = await supabase
+      .from('participation')
+      .update({ status: 'confirmed' })
+      .eq('id', participation.value.id)
+
+    confirming.value = false
+    if (err) { error.value = err.message; return }
+
+    participation.value = { ...participation.value, status: 'confirmed' }
+    participantCount.value++
   }
 
   async function startJaunt() {
@@ -102,5 +127,5 @@ export function useParticipation(jauntId: string) {
     }
   }
 
-  return { participation, loading, error, validating, fetch, startJaunt, validateStep }
+  return { participation, participantCount, MAX_PARTICIPANTS, loading, error, validating, confirming, fetch, confirmParticipation, startJaunt, validateStep }
 }
