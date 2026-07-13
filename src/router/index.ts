@@ -65,6 +65,12 @@ const router = createRouter({
       component: () => import('@/views/AfterjauntView.vue'),
       meta: { requiresAuth: true, requiresOnboarding: true },
     },
+    {
+      path: '/membership',
+      name: 'membership',
+      component: () => import('@/views/MembershipView.vue'),
+      meta: { requiresAuth: true, requiresOnboarding: true },
+    },
   ],
 })
 

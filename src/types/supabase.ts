@@ -151,6 +151,45 @@ export type Database = {
         }
         Relationships: []
       }
+      membership_plan: {
+        Row: {
+          billing_cycle: string
+          created_at: string
+          features: Json
+          id: string
+          is_highlighted: boolean
+          name: string
+          price_cents: number
+          slug: string
+          sort_order: number
+          tagline: string | null
+        }
+        Insert: {
+          billing_cycle?: string
+          created_at?: string
+          features?: Json
+          id?: string
+          is_highlighted?: boolean
+          name: string
+          price_cents: number
+          slug: string
+          sort_order?: number
+          tagline?: string | null
+        }
+        Update: {
+          billing_cycle?: string
+          created_at?: string
+          features?: Json
+          id?: string
+          is_highlighted?: boolean
+          name?: string
+          price_cents?: number
+          slug?: string
+          sort_order?: number
+          tagline?: string | null
+        }
+        Relationships: []
+      }
       participation: {
         Row: {
           arrived_at: string | null
