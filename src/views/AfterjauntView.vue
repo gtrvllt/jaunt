@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
@@ -34,6 +34,12 @@ onMounted(async () => {
   loading.value = false
   if (err) { error.value = err.message; return }
   recap.value = data as unknown as RecapData
+})
+
+const showFeedbackPrompt = computed(() => {
+  if (!recap.value?.jaunt.completed_at) return false
+  const ms = Date.now() - new Date(recap.value.jaunt.completed_at).getTime()
+  return ms >= 60 * 60 * 1000
 })
 
 function duration(p: RecapData) {
@@ -83,7 +89,7 @@ function duration(p: RecapData) {
           <span class="stat-value">—</span>
         </div>
         <div class="stat-row">
-          <span class="stat-label">Time</span>
+          <span class="stat-label">Durée</span>
           <span class="stat-value">{{ duration(recap) }}</span>
         </div>
         <div class="stat-row">
@@ -91,11 +97,27 @@ function duration(p: RecapData) {
           <span class="stat-value stat-value--highlight">{{ recap.jaunt.jaunt_theme.title }}</span>
         </div>
       </div>
+
+      <!-- Feedback prompt (1h+ après la fin) -->
+      <div v-if="showFeedbackPrompt" class="feedback-prompt" role="complementary">
+        <p class="feedback-prompt-title">Comment s'est passée la Jaunt ?</p>
+        <p class="feedback-prompt-sub">Ton avis aide le club à s'améliorer.</p>
+        <button class="btn-feedback" @click="router.push({ name: 'jaunt-feedback', params: { id: jauntId } })">
+          Donner mon avis ✦
+        </button>
+      </div>
     </main>
 
     <footer class="footer">
+      <button
+        v-if="!showFeedbackPrompt"
+        class="btn-feedback-secondary"
+        @click="router.push({ name: 'jaunt-feedback', params: { id: jauntId } })"
+      >
+        Donner mon avis
+      </button>
       <button class="btn-return" @click="router.push({ name: 'dashboard' })">
-        Return to Dashboard
+        Retour au Dashboard
       </button>
     </footer>
   </div>
@@ -124,10 +146,19 @@ function duration(p: RecapData) {
 .stat-value { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-base); color: var(--color-dark); }
 .stat-value--highlight { color: var(--color-info); }
 
+/* Feedback prompt */
+.feedback-prompt { background: linear-gradient(135deg, #5856D6 0%, #7c3aed 100%); border-radius: var(--radius-md); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
+.feedback-prompt-title { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-lg); color: #fff; }
+.feedback-prompt-sub { font-size: var(--text-sm); color: rgba(255,255,255,0.8); }
+.btn-feedback { height: 44px; background: #fff; color: var(--color-primary); border: none; border-radius: var(--radius-xl); font-family: var(--font-body); font-size: var(--text-base); font-weight: var(--font-weight-bold); cursor: pointer; transition: opacity 0.15s; }
+.btn-feedback:hover { opacity: 0.9; }
+
 /* Footer */
-.footer { flex-shrink: 0; padding: var(--space-5) var(--space-6) var(--space-8); }
-.btn-return { width: 100%; height: var(--height-btn); background: var(--color-dark-2); color: var(--color-gray-bg); border: none; border-radius: var(--radius-md); font-family: var(--font-body); font-size: var(--text-md); font-weight: var(--font-weight-semibold); cursor: pointer; transition: opacity 0.15s; }
+.footer { flex-shrink: 0; padding: var(--space-5) var(--space-6) var(--space-8); display: flex; flex-direction: column; gap: var(--space-3); }
+.btn-return { width: 100%; height: var(--height-btn); background: var(--color-dark); color: #fff; border: none; border-radius: var(--radius-xl); font-family: var(--font-body); font-size: var(--text-base); font-weight: var(--font-weight-semibold); cursor: pointer; transition: opacity 0.15s; }
 .btn-return:hover { opacity: 0.85; }
+.btn-feedback-secondary { width: 100%; height: var(--height-btn); background: #fff; border: 1.5px solid var(--color-primary); color: var(--color-primary); border-radius: var(--radius-xl); font-family: var(--font-body); font-size: var(--text-base); font-weight: var(--font-weight-semibold); cursor: pointer; transition: opacity 0.15s; }
+.btn-feedback-secondary:hover { opacity: 0.85; }
 
 .state-card { background: var(--color-gray-bg); border-radius: var(--radius-md); padding: var(--space-6); text-align: center; color: var(--color-gray-text); font-size: var(--text-md); }
 .state-card--error { background: #fff0ef; color: var(--color-error); }

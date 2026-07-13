@@ -66,6 +66,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresOnboarding: true },
     },
     {
+      path: '/jaunt/:id/feedback',
+      name: 'jaunt-feedback',
+      component: () => import('@/views/FeedbackView.vue'),
+      meta: { requiresAuth: true, requiresOnboarding: true },
+    },
+    {
       path: '/membership',
       name: 'membership',
       component: () => import('@/views/MembershipView.vue'),
