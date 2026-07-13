@@ -11,12 +11,12 @@ const { participation, loading, error, validating, fetch, validateStep } = usePa
 const currentQuest = computed(() => {
   if (!participation.value) return null
   const idx = participation.value.current_quest_index
-  return participation.value.jaunt.quests[idx] ?? null
+  return participation.value.jaunt.jaunt_theme.quests[idx] ?? null
 })
 
 const progressLabel = computed(() => {
   if (!participation.value) return ''
-  const total = participation.value.jaunt.quests.length
+  const total = participation.value.jaunt.jaunt_theme.quests.length
   return `${participation.value.current_quest_index + 1} / ${total}`
 })
 
@@ -77,7 +77,7 @@ async function onValidate() {
         <div class="progress-bar">
           <div
             class="progress-fill"
-            :style="{ width: `${((participation.current_quest_index + 1) / participation.jaunt.quests.length) * 100}%` }"
+            :style="{ width: `${((participation.current_quest_index + 1) / participation.jaunt.jaunt_theme.quests.length) * 100}%` }"
           />
         </div>
       </div>
@@ -108,7 +108,7 @@ async function onValidate() {
       <!-- Liste des quêtes -->
       <div class="quests-list" role="list" aria-label="Quêtes de la jaunt">
         <div
-          v-for="(quest, idx) in participation.jaunt.quests"
+          v-for="(quest, idx) in participation.jaunt.jaunt_theme.quests"
           :key="quest.id"
           class="quest-item"
           :class="{

@@ -10,7 +10,7 @@ const { participation, loading, error, validating, fetch, validateStep } = usePa
 
 const currentQuest = computed(() => {
   if (!participation.value) return null
-  return participation.value.jaunt.quests[participation.value.current_quest_index] ?? null
+  return participation.value.jaunt.jaunt_theme.quests[participation.value.current_quest_index] ?? null
 })
 
 onMounted(fetch)
