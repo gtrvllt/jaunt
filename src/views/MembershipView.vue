@@ -71,13 +71,16 @@ onMounted(fetchPlans)
           </ul>
 
           <!-- CTA -->
+          <div v-if="plan.is_highlighted" class="coming-soon-badge" aria-label="Bientôt disponible">
+            Bientôt disponible
+          </div>
           <button
+            v-else
             class="btn-select"
-            :class="{ 'btn-select--primary': plan.is_highlighted }"
             @click="$router.push({ name: 'dashboard' })"
             :aria-label="`Rejoindre le club ${plan.name}`"
           >
-            {{ plan.is_highlighted ? 'Rejoindre le Club' : 'Choisir Standard' }}
+            Choisir Standard
           </button>
         </div>
       </div>
@@ -116,9 +119,10 @@ onMounted(fetchPlans)
   background: #fff;
 }
 .plan-card--highlighted {
-  border-color: var(--color-primary);
-  background: #fafafe;
-  box-shadow: 0 4px 24px rgba(88, 86, 214, 0.10);
+  border-color: var(--color-gray-border);
+  background: var(--color-gray-bg);
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 /* Badge */
@@ -127,7 +131,7 @@ onMounted(fetchPlans)
   top: -14px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--color-primary);
+  background: var(--color-gray-text);
   color: #fff;
   font-size: var(--text-xs);
   font-weight: var(--font-weight-bold);
@@ -135,6 +139,21 @@ onMounted(fetchPlans)
   padding: var(--space-1) var(--space-4);
   border-radius: var(--radius-full);
   white-space: nowrap;
+}
+
+/* Coming soon */
+.coming-soon-badge {
+  height: var(--height-btn);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  border: 1.5px dashed var(--color-gray-border);
+  background: transparent;
+  color: var(--color-gray-text);
+  font-size: var(--text-base);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.02em;
 }
 
 /* Header */
