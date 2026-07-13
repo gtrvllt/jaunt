@@ -97,6 +97,18 @@ onMounted(async () => {
         <p v-else class="empty-text">Aucun intérêt sélectionné.</p>
       </section>
 
+      <!-- Abonnement -->
+      <section aria-label="Abonnement">
+        <h2 class="section-title">ABONNEMENT</h2>
+        <button class="membership-row" @click="router.push({ name: 'membership' })">
+          <div class="membership-info">
+            <p class="membership-label">Formule Standard</p>
+            <p class="membership-sub">Changer ou upgrader</p>
+          </div>
+          <span class="membership-chevron" aria-hidden="true">›</span>
+        </button>
+      </section>
+
       <!-- Achievements -->
       <section aria-label="Achievements">
         <h2 class="section-title">ACHIEVEMENTS</h2>
@@ -152,6 +164,14 @@ onMounted(async () => {
 .achievement-desc { font-size: var(--text-sm); color: var(--color-gray-text); margin-top: var(--space-1); }
 
 .empty-text { font-size: var(--text-base); color: var(--color-gray-text); font-style: italic; }
+
+/* Abonnement */
+.membership-row { width: 100%; display: flex; align-items: center; justify-content: space-between; background: var(--color-gray-bg); border: none; border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); cursor: pointer; text-align: left; transition: opacity 0.15s; }
+.membership-row:hover { opacity: 0.8; }
+.membership-info { display: flex; flex-direction: column; gap: 2px; }
+.membership-label { font-size: var(--text-base); font-weight: var(--font-weight-semibold); color: var(--color-dark); }
+.membership-sub { font-size: var(--text-sm); color: var(--color-gray-text); }
+.membership-chevron { font-size: 24px; color: var(--color-gray-text); line-height: 1; }
 
 /* Footer */
 .footer { flex-shrink: 0; padding: var(--space-5) var(--space-6) var(--space-8); }
