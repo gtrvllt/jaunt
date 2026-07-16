@@ -232,6 +232,93 @@ export type Database = {
         }
         Relationships: []
       }
+      mission: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          kind: string
+          sequence_order: number
+          theme_id: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          sequence_order: number
+          theme_id: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          sequence_order?: number
+          theme_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "jaunt_theme"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mission_completion: {
+        Row: {
+          created_at: string
+          id: string
+          jaunt_id: string
+          mission_id: string
+          photo_url: string | null
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          jaunt_id: string
+          mission_id: string
+          photo_url?: string | null
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          jaunt_id?: string
+          mission_id?: string
+          photo_url?: string | null
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mission_completion_jaunt_id_fkey"
+            columns: ["jaunt_id"]
+            isOneToOne: false
+            referencedRelation: "jaunt"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_completion_mission_id_fkey"
+            columns: ["mission_id"]
+            isOneToOne: false
+            referencedRelation: "mission"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mission_completion_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       participation: {
         Row: {
           arrived_at: string | null
