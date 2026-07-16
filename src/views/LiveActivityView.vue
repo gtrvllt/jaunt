@@ -1,55 +1,102 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useParticipation } from '@/composables/useParticipation'
+import { useMissions, type MissionWithStatus } from '@/composables/useMissions'
 
 const route = useRoute()
 const router = useRouter()
 const jauntId = route.params.id as string
-const { participation, loading, error, validating, fetch, validateStep } = useParticipation(jauntId)
+const {
+  missionsWithStatus,
+  doneCount,
+  groupProgress,
+  participantCount,
+  loading,
+  error,
+  busyMissionId,
+  fetchAll,
+  toggle,
+  uploadPhoto,
+  finish,
+  subscribe,
+} = useMissions(jauntId)
 
-const currentQuest = computed(() => {
-  if (!participation.value) return null
-  const idx = participation.value.current_quest_index
-  return participation.value.jaunt.quests[idx] ?? null
+const finishing = ref(false)
+const confettiRoot = ref<HTMLElement | null>(null)
+
+const allDone = computed(
+  () => missionsWithStatus.value.length > 0 && doneCount.value === missionsWithStatus.value.length,
+)
+const progressPct = computed(() => Math.round(groupProgress.value * 100))
+
+const KIND_LABEL: Record<string, string> = {
+  photo: '📷 Photo',
+  icebreaker: '💬 Icebreaker',
+  challenge: '⚡ Défi',
+}
+
+onMounted(() => {
+  fetchAll()
+  subscribe()
 })
 
-const progressLabel = computed(() => {
-  if (!participation.value) return ''
-  const total = participation.value.jaunt.quests.length
-  return `${participation.value.current_quest_index + 1} / ${total}`
-})
+// Retour haptique + confettis à la validation d'une mission.
+function celebrate() {
+  if ('vibrate' in navigator) navigator.vibrate?.(30)
+  burstConfetti()
+}
 
-onMounted(fetch)
-
-async function onValidate() {
-  if (!navigator.geolocation) {
-    alert('La géolocalisation n\'est pas disponible sur cet appareil.')
-    return
+function burstConfetti() {
+  const root = confettiRoot.value
+  if (!root) return
+  const colors = ['#5856D6', '#32D74B', '#64D2FF', '#FF3B30', '#FFD60A']
+  for (let i = 0; i < 24; i++) {
+    const piece = document.createElement('span')
+    piece.className = 'confetti-piece'
+    piece.style.left = `${Math.random() * 100}%`
+    piece.style.background = colors[i % colors.length] ?? '#5856D6'
+    piece.style.animationDelay = `${Math.random() * 0.15}s`
+    piece.style.transform = `rotate(${Math.random() * 360}deg)`
+    root.appendChild(piece)
+    setTimeout(() => piece.remove(), 1400)
   }
-  navigator.geolocation.getCurrentPosition(
-    (pos) => validateStep({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-    () => { alert('Impossible d\'obtenir ta position. Vérifie les permissions de localisation.') },
-    { enableHighAccuracy: true, timeout: 8000 },
-  )
+}
+
+async function onToggle(mission: MissionWithStatus) {
+  const wasDone = mission.completed
+  await toggle(mission)
+  if (!wasDone) celebrate()
+}
+
+async function onPhoto(mission: MissionWithStatus, event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  const wasDone = mission.completed
+  await uploadPhoto(mission, file)
+  input.value = ''
+  if (!wasDone && !error.value) celebrate()
+}
+
+async function onFinish() {
+  finishing.value = true
+  const { error: err } = await finish()
+  finishing.value = false
+  if (!err) router.push({ name: 'jaunt-recap', params: { id: jauntId } })
 }
 </script>
 
 <template>
   <div class="screen">
+    <div ref="confettiRoot" class="confetti-root" aria-hidden="true" />
+
     <header class="appbar">
-      <span class="appbar-logo">JAUNT</span>
-      <button
-        class="map-btn"
-        aria-label="Voir la carte"
-        @click="router.push({ name: 'jaunt-map', params: { id: jauntId } })"
-      >
-        🗺
-      </button>
+      <button class="appbar-logo" @click="router.push({ name: 'dashboard' })">JAUNT</button>
     </header>
 
     <main v-if="loading" class="content" aria-busy="true" aria-label="Chargement…">
       <div class="skeleton-block" />
+      <div class="skeleton-block skeleton-block--short" />
       <div class="skeleton-block skeleton-block--short" />
     </main>
 
@@ -57,118 +104,180 @@ async function onValidate() {
       <div class="state-card state-card--error" role="alert"><p>{{ error }}</p></div>
     </main>
 
-    <main v-else-if="!participation || !currentQuest" class="content">
-      <div class="state-card"><p>Quête introuvable.</p></div>
+    <main v-else-if="missionsWithStatus.length === 0" class="content">
+      <div class="state-card"><p>Aucune mission pour cette Jaunt.</p></div>
     </main>
 
     <main v-else class="content">
-      <!-- Progression -->
-      <div class="progress-row">
-        <span class="progress-label">Quête {{ progressLabel }}</span>
+      <!-- En-tête -->
+      <div>
+        <p class="board-label">MISSION BOARD</p>
+        <h1 class="board-title">Vos défis du jour</h1>
+        <p class="board-sub">Cochez les missions au fil de la balade. À vous de jouer !</p>
+      </div>
+
+      <!-- Progression groupe -->
+      <div class="progress-panel">
+        <div class="progress-head">
+          <span class="progress-title">Progression du groupe</span>
+          <span class="progress-pct">{{ progressPct }}%</span>
+        </div>
         <div class="progress-bar">
-          <div
-            class="progress-fill"
-            :style="{ width: `${((participation.current_quest_index + 1) / participation.jaunt.quests.length) * 100}%` }"
-          />
+          <div class="progress-fill" :style="{ width: `${progressPct}%` }" />
         </div>
+        <p class="progress-meta">
+          {{ doneCount }} / {{ missionsWithStatus.length }} de tes missions ·
+          {{ participantCount }} aventurier{{ participantCount > 1 ? 's' : '' }}
+        </p>
       </div>
 
-      <!-- Indice visuel -->
-      <div class="visual-hint">
-        <img
-          v-if="currentQuest.hint_visual_url"
-          :src="currentQuest.hint_visual_url"
-          alt="Indice visuel de la quête"
-          class="hint-img"
-        />
-        <div v-else class="hint-placeholder">
-          <span aria-hidden="true">🖼</span>
-          <p>Photo indice</p>
-        </div>
-      </div>
-
-      <!-- Direction -->
-      <div class="direction-card">
-        <div class="direction-header">
-          <span class="direction-label">DIRECTION</span>
-          <span class="direction-icon" aria-hidden="true">↗</span>
-        </div>
-        <p class="direction-text">Suis les indices et explore les alentours</p>
-      </div>
-
-      <!-- Liste des quêtes -->
-      <div class="quests-list" role="list" aria-label="Quêtes de la jaunt">
+      <!-- Missions -->
+      <div class="mission-list" role="list">
         <div
-          v-for="(quest, idx) in participation.jaunt.quests"
-          :key="quest.id"
-          class="quest-item"
-          :class="{
-            'quest-item--done': idx < participation.current_quest_index,
-            'quest-item--active': idx === participation.current_quest_index,
-          }"
+          v-for="mission in missionsWithStatus"
+          :key="mission.id"
+          class="mission-card"
+          :class="{ 'mission-card--done': mission.completed }"
           role="listitem"
         >
-          <span class="quest-check" aria-hidden="true">
-            {{ idx < participation.current_quest_index ? '✓' : idx === participation.current_quest_index ? '●' : '○' }}
-          </span>
-          <span class="quest-hint">{{ quest.hint_text }}</span>
+          <button
+            class="mission-check"
+            :class="{ 'mission-check--done': mission.completed }"
+            :disabled="busyMissionId === mission.id"
+            :aria-pressed="mission.completed"
+            :aria-label="mission.completed ? 'Marquer non fait' : 'Marquer comme fait'"
+            @click="onToggle(mission)"
+          >
+            <span aria-hidden="true">{{ mission.completed ? '✓' : '' }}</span>
+          </button>
+
+          <div class="mission-body">
+            <div class="mission-top">
+              <span class="mission-kind">{{ KIND_LABEL[mission.kind] ?? mission.kind }}</span>
+              <span v-if="mission.groupCount > 0" class="mission-group">
+                {{ mission.groupCount }} ✓
+              </span>
+            </div>
+            <p class="mission-name" :class="{ 'mission-name--done': mission.completed }">
+              {{ mission.title }}
+            </p>
+            <p v-if="mission.description" class="mission-desc">{{ mission.description }}</p>
+
+            <!-- Preuve photo -->
+            <div v-if="mission.kind === 'photo'" class="mission-photo">
+              <img v-if="mission.photo_url" :src="mission.photo_url" alt="Preuve photo" class="photo-thumb" />
+              <label class="photo-btn" :for="`photo-${mission.id}`">
+                <span aria-hidden="true">📸</span>
+                {{ mission.photo_url ? 'Changer la photo' : 'Ajouter une photo' }}
+              </label>
+              <input
+                :id="`photo-${mission.id}`"
+                class="photo-input"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                :disabled="busyMissionId === mission.id"
+                @change="onPhoto(mission, $event)"
+              />
+            </div>
+          </div>
         </div>
+      </div>
+
+      <!-- Célébration finale -->
+      <div v-if="allDone" class="all-done" role="status">
+        <span aria-hidden="true">🎉</span>
+        <p>Toutes tes missions sont validées, bravo !</p>
       </div>
     </main>
 
-    <footer v-if="participation && currentQuest" class="footer">
-      <button class="btn-validate" :disabled="validating" @click="onValidate">
-        {{ validating ? 'Validation…' : 'VALIDATE STEP' }}
+    <footer v-if="!loading && missionsWithStatus.length > 0" class="footer">
+      <button class="btn-finish" :disabled="finishing" @click="onFinish">
+        {{ finishing ? 'Clôture…' : allDone ? 'Terminer la Jaunt 🚀' : 'Terminer la Jaunt' }}
       </button>
     </footer>
   </div>
 </template>
 
 <style scoped>
-.screen { display: flex; flex-direction: column; min-height: 100dvh; background: #fff; }
+.screen { display: flex; flex-direction: column; min-height: 100dvh; background: #fff; position: relative; }
 
-.appbar { height: var(--height-appbar); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-6); border-bottom: 1px solid var(--color-gray-border); flex-shrink: 0; }
-.appbar-logo { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-lg); letter-spacing: var(--letter-spacing-logo); color: var(--color-dark); }
-.map-btn { background: var(--color-gray-bg); border: 1px solid var(--color-gray-border); border-radius: var(--radius-full); width: 40px; height: 40px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+.appbar { height: var(--height-appbar); display: flex; align-items: center; padding: 0 var(--space-6); border-bottom: 1px solid var(--color-gray-border); flex-shrink: 0; }
+.appbar-logo { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-lg); letter-spacing: var(--letter-spacing-logo); color: var(--color-dark); background: none; border: none; cursor: pointer; padding: 0; }
 
 .content { flex: 1; padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); overflow-y: auto; }
 
+/* En-tête */
+.board-label { font-size: var(--text-xs); font-weight: var(--font-weight-semibold); letter-spacing: var(--letter-spacing-label); color: var(--color-primary); margin-bottom: var(--space-2); }
+.board-title { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-3xl); color: var(--color-dark); letter-spacing: -0.5px; line-height: 1.15; }
+.board-sub { font-size: var(--text-base); color: var(--color-gray-text); margin-top: var(--space-2); }
+
 /* Progression */
-.progress-row { display: flex; flex-direction: column; gap: var(--space-2); }
-.progress-label { font-size: var(--text-sm); font-weight: var(--font-weight-semibold); color: var(--color-gray-text); letter-spacing: var(--letter-spacing-label); }
-.progress-bar { height: 4px; background: var(--color-gray-border); border-radius: var(--radius-full); overflow: hidden; }
-.progress-fill { height: 100%; background: var(--color-primary); border-radius: var(--radius-full); transition: width 0.4s ease; }
+.progress-panel { background: var(--color-dark); border-radius: var(--radius-md); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
+.progress-head { display: flex; align-items: baseline; justify-content: space-between; }
+.progress-title { font-size: var(--text-sm); font-weight: var(--font-weight-semibold); color: #fff; }
+.progress-pct { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-2xl); color: #fff; }
+.progress-bar { height: 8px; background: rgba(255,255,255,0.2); border-radius: var(--radius-full); overflow: hidden; }
+.progress-fill { height: 100%; background: var(--color-success); border-radius: var(--radius-full); transition: width 0.5s ease; }
+.progress-meta { font-size: var(--text-sm); color: rgba(255,255,255,0.7); }
 
-/* Indice visuel */
-.visual-hint { border-radius: var(--radius-md); overflow: hidden; background: var(--color-gray-bg); aspect-ratio: 16/9; }
-.hint-img { width: 100%; height: 100%; object-fit: cover; }
-.hint-placeholder { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); color: var(--color-gray-text); font-size: var(--text-sm); }
-.hint-placeholder span { font-size: 32px; }
+/* Missions */
+.mission-list { display: flex; flex-direction: column; gap: var(--space-3); }
+.mission-card { display: flex; gap: var(--space-4); background: var(--color-gray-bg); border: 2px solid transparent; border-radius: var(--radius-md); padding: var(--space-4); transition: border-color 0.15s, background 0.15s; }
+.mission-card--done { background: #f0fdf4; border-color: var(--color-success); }
 
-/* Direction */
-.direction-card { background: var(--color-gray-bg); border-radius: var(--radius-md); padding: var(--space-4); }
-.direction-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-1); }
-.direction-label { font-size: var(--text-xs); font-weight: var(--font-weight-semibold); letter-spacing: var(--letter-spacing-label); color: var(--color-gray-text); }
-.direction-icon { font-size: 20px; color: var(--color-primary); }
-.direction-text { font-size: var(--text-base); color: var(--color-dark); }
+.mission-check { flex-shrink: 0; width: 32px; height: 32px; border-radius: var(--radius-full); border: 2px solid var(--color-gray-border); background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: var(--text-lg); font-weight: var(--font-weight-bold); color: #fff; transition: background 0.15s, border-color 0.15s; }
+.mission-check--done { background: var(--color-success); border-color: var(--color-success); }
+.mission-check:disabled { opacity: 0.5; cursor: wait; }
 
-/* Quêtes */
-.quests-list { display: flex; flex-direction: column; gap: var(--space-3); }
-.quest-item { display: flex; align-items: flex-start; gap: var(--space-3); padding: var(--space-3); border-radius: var(--radius-md); background: var(--color-gray-bg); }
-.quest-item--active { background: var(--color-primary-light); }
-.quest-item--done { opacity: 0.5; }
-.quest-check { font-size: var(--text-lg); color: var(--color-primary); flex-shrink: 0; width: 20px; text-align: center; }
-.quest-item--done .quest-check { color: var(--color-success); }
-.quest-hint { font-size: var(--text-base); color: var(--color-dark); line-height: var(--line-height-base); }
+.mission-body { flex: 1; min-width: 0; }
+.mission-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-1); }
+.mission-kind { font-size: var(--text-xs); font-weight: var(--font-weight-semibold); letter-spacing: var(--letter-spacing-label); color: var(--color-primary); }
+.mission-group { font-size: var(--text-xs); font-weight: var(--font-weight-bold); color: var(--color-success); }
+.mission-name { font-size: var(--text-md); font-weight: var(--font-weight-semibold); color: var(--color-dark); line-height: var(--line-height-base); }
+.mission-name--done { text-decoration: line-through; color: var(--color-gray-text); }
+.mission-desc { font-size: var(--text-sm); color: var(--color-gray-text); margin-top: 2px; line-height: var(--line-height-base); }
+
+/* Photo */
+.mission-photo { margin-top: var(--space-3); display: flex; flex-direction: column; gap: var(--space-2); }
+.photo-thumb { width: 100%; max-height: 180px; object-fit: cover; border-radius: var(--radius-sm); }
+.photo-btn { display: inline-flex; align-items: center; gap: var(--space-2); align-self: flex-start; padding: var(--space-2) var(--space-4); background: #fff; border: 1.5px solid var(--color-gray-border); border-radius: var(--radius-full); font-size: var(--text-sm); font-weight: var(--font-weight-semibold); color: var(--color-dark); cursor: pointer; }
+.photo-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.photo-input { display: none; }
+
+/* Célébration */
+.all-done { display: flex; align-items: center; gap: var(--space-3); background: #f0fdf4; border: 1.5px solid var(--color-success); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); font-size: var(--text-base); font-weight: var(--font-weight-semibold); color: #166534; }
+.all-done span { font-size: 24px; }
 
 /* Footer */
 .footer { flex-shrink: 0; padding: var(--space-5) var(--space-6) var(--space-8); border-top: 1px solid var(--color-gray-border); }
-.btn-validate { width: 100%; height: var(--height-btn); background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-xl); font-family: var(--font-body); font-size: var(--text-lg); font-weight: var(--font-weight-bold); letter-spacing: var(--letter-spacing-label); cursor: pointer; transition: opacity 0.15s; }
-.btn-validate:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-finish { width: 100%; height: var(--height-btn); background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-xl); font-family: var(--font-body); font-size: var(--text-lg); font-weight: var(--font-weight-bold); cursor: pointer; box-shadow: var(--shadow-primary); transition: opacity 0.15s; }
+.btn-finish:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-finish:not(:disabled):hover { opacity: 0.9; }
 
+/* States */
 .state-card { background: var(--color-gray-bg); border-radius: var(--radius-md); padding: var(--space-6); text-align: center; color: var(--color-gray-text); font-size: var(--text-md); }
 .state-card--error { background: #fff0ef; color: var(--color-error); }
-.skeleton-block { height: 120px; background: var(--color-gray-bg); border-radius: var(--radius-md); animation: pulse 1.4s ease-in-out infinite; }
+.skeleton-block { height: 90px; background: var(--color-gray-bg); border-radius: var(--radius-md); animation: pulse 1.4s ease-in-out infinite; }
 .skeleton-block--short { height: 72px; }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* Confettis (conteneur) */
+.confetti-root { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 50; }
+</style>
+
+<!-- Styles globaux : les confettis sont injectés dynamiquement (hors scope). -->
+<style>
+.confetti-piece {
+  position: absolute;
+  top: -12px;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  animation: confetti-fall 1.3s ease-in forwards;
+}
+@keyframes confetti-fall {
+  0% { top: -12px; opacity: 1; }
+  100% { top: 100vh; opacity: 0.9; }
+}
 </style>
