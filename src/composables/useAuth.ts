@@ -36,10 +36,35 @@ export function useAuth() {
     await track('auth_completed', { method: 'google' })
   }
 
+  // Envoie un email de réinitialisation. On ne révèle jamais si l'email existe
+  // (sécurité) : on retourne toujours true sauf erreur réseau réelle.
+  async function requestPasswordReset(email: string): Promise<boolean> {
+    loading.value = true
+    error.value = null
+    const { error: err } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/new-password`,
+    })
+    loading.value = false
+    if (err) { error.value = err.message; return false }
+    await track('password_reset_requested')
+    return true
+  }
+
+  // Définit le nouveau mot de passe (session de recovery active) puis connecte.
+  async function updatePassword(password: string): Promise<boolean> {
+    loading.value = true
+    error.value = null
+    const { error: err } = await supabase.auth.updateUser({ password })
+    loading.value = false
+    if (err) { error.value = err.message; return false }
+    await track('password_reset_completed')
+    return true
+  }
+
   async function signOut() {
     await auth.signOut()
     router.push({ name: 'auth' })
   }
 
-  return { loading, error, sendMagicLink, signInWithGoogle, signOut }
+  return { loading, error, sendMagicLink, signInWithGoogle, requestPasswordReset, updatePassword, signOut }
 }

@@ -18,6 +18,18 @@ const router = createRouter({
       meta: { public: true },
     },
     {
+      path: '/auth/forgot-password',
+      name: 'forgot-password',
+      component: () => import('@/views/ForgotPasswordView.vue'),
+      meta: { public: true },
+    },
+    {
+      // Pas de guard : accessible avec la session de recovery (déjà "authentifié").
+      path: '/auth/new-password',
+      name: 'new-password',
+      component: () => import('@/views/NewPasswordView.vue'),
+    },
+    {
       path: '/onboarding',
       name: 'onboarding',
       component: () => import('@/views/OnboardingInterestsView.vue'),

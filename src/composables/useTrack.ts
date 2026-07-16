@@ -9,6 +9,8 @@ type TrackableEvent =
   | 'quest_validated'
   | 'jaunt_completed'
   | 'profile_updated'
+  | 'password_reset_requested'
+  | 'password_reset_completed'
 
 export function useTrack() {
   const auth = useAuthStore()

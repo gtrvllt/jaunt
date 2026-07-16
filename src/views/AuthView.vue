@@ -31,6 +31,10 @@ const { loading, error, signInWithGoogle } = useAuth()
         Continue with Email
       </button>
 
+      <button class="forgot-link" @click="router.push({ name: 'forgot-password' })">
+        Mot de passe oublié ?
+      </button>
+
       <p class="legal">
         By continuing, you agree to our Terms &amp; Privacy Policy.
       </p>
@@ -148,6 +152,17 @@ const { loading, error, signInWithGoogle } = useAuth()
 
 .btn-primary:hover:not(:disabled) {
   opacity: 0.9;
+}
+
+.forgot-link {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  padding: 0;
 }
 
 .legal {
