@@ -1,0 +1,14 @@
+project_id = "jaunt"
+
+# Le webhook Stripe est appelé par Stripe (sans JWT Supabase) : on désactive
+# la vérification du JWT pour cet endpoint. La sécurité est assurée par la
+# vérification de la signature Stripe (STRIPE_WEBHOOK_SECRET) dans la fonction.
+[functions.stripe-webhook]
+verify_jwt = false
+
+# Les deux autres fonctions exigent un utilisateur authentifié (JWT requis).
+[functions.create-checkout-session]
+verify_jwt = true
+
+[functions.create-portal-session]
+verify_jwt = true
