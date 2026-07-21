@@ -72,6 +72,11 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresOnboarding: true },
     },
     {
+      path: '/design-system',
+      name: 'design-system',
+      component: () => import('@/views/DesignSystemView.vue'),
+    },
+    {
       path: '/membership',
       name: 'membership',
       component: () => import('@/views/MembershipView.vue'),
