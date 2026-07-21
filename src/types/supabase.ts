@@ -216,6 +216,7 @@ export type Database = {
           price_cents: number
           slug: string
           sort_order: number
+          stripe_price_id: string | null
           tagline: string | null
         }
         Insert: {
@@ -228,6 +229,7 @@ export type Database = {
           price_cents: number
           slug: string
           sort_order?: number
+          stripe_price_id?: string | null
           tagline?: string | null
         }
         Update: {
@@ -240,6 +242,7 @@ export type Database = {
           price_cents?: number
           slug?: string
           sort_order?: number
+          stripe_price_id?: string | null
           tagline?: string | null
         }
         Relationships: []
@@ -560,6 +563,53 @@ export type Database = {
             foreignKeyName: "review_reviewer_id_fkey"
             columns: ["reviewer_id"]
             isOneToOne: false
+            referencedRelation: "profile"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          id: string
+          plan_slug: string | null
+          profile_id: string
+          status: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan_slug?: string | null
+          profile_id: string
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan_slug?: string | null
+          profile_id?: string
+          status?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
             referencedRelation: "profile"
             referencedColumns: ["id"]
           },
