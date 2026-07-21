@@ -624,6 +624,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Json
       }
+      get_member_access: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_jaunt_participant_count: {
         Args: { jaunt_id: string }
         Returns: number
