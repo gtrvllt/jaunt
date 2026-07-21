@@ -171,6 +171,10 @@ export type Database = {
           id: string
           image_url: string | null
           location_label: string | null
+          meeting_address: string | null
+          meeting_landmark_url: string | null
+          meeting_lat: number | null
+          meeting_lng: number | null
           title: string
         }
         Insert: {
@@ -180,6 +184,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           location_label?: string | null
+          meeting_address?: string | null
+          meeting_landmark_url?: string | null
+          meeting_lat?: number | null
+          meeting_lng?: number | null
           title: string
         }
         Update: {
@@ -189,6 +197,10 @@ export type Database = {
           id?: string
           image_url?: string | null
           location_label?: string | null
+          meeting_address?: string | null
+          meeting_landmark_url?: string | null
+          meeting_lat?: number | null
+          meeting_lng?: number | null
           title?: string
         }
         Relationships: []

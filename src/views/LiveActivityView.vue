@@ -11,12 +11,12 @@ const { participation, loading, error, validating, fetch, validateStep } = usePa
 const currentQuest = computed(() => {
   if (!participation.value) return null
   const idx = participation.value.current_quest_index
-  return participation.value.jaunt.quests[idx] ?? null
+  return participation.value.jaunt.jaunt_theme.quests[idx] ?? null
 })
 
 const progressLabel = computed(() => {
   if (!participation.value) return ''
-  const total = participation.value.jaunt.quests.length
+  const total = participation.value.jaunt.jaunt_theme.quests.length
   return `${participation.value.current_quest_index + 1} / ${total}`
 })
 
@@ -39,13 +39,22 @@ async function onValidate() {
   <div class="screen">
     <header class="appbar">
       <span class="appbar-logo">JAUNT</span>
-      <button
-        class="map-btn"
-        aria-label="Voir la carte"
-        @click="router.push({ name: 'jaunt-map', params: { id: jauntId } })"
-      >
-        🗺
-      </button>
+      <div class="appbar-actions">
+        <button
+          class="map-btn"
+          aria-label="Point de rendez-vous"
+          @click="router.push({ name: 'jaunt-meeting-point', params: { id: jauntId } })"
+        >
+          📍
+        </button>
+        <button
+          class="map-btn"
+          aria-label="Voir la carte"
+          @click="router.push({ name: 'jaunt-map', params: { id: jauntId } })"
+        >
+          🗺
+        </button>
+      </div>
     </header>
 
     <main v-if="loading" class="content" aria-busy="true" aria-label="Chargement…">
@@ -68,7 +77,7 @@ async function onValidate() {
         <div class="progress-bar">
           <div
             class="progress-fill"
-            :style="{ width: `${((participation.current_quest_index + 1) / participation.jaunt.quests.length) * 100}%` }"
+            :style="{ width: `${((participation.current_quest_index + 1) / participation.jaunt.jaunt_theme.quests.length) * 100}%` }"
           />
         </div>
       </div>
@@ -99,7 +108,7 @@ async function onValidate() {
       <!-- Liste des quêtes -->
       <div class="quests-list" role="list" aria-label="Quêtes de la jaunt">
         <div
-          v-for="(quest, idx) in participation.jaunt.quests"
+          v-for="(quest, idx) in participation.jaunt.jaunt_theme.quests"
           :key="quest.id"
           class="quest-item"
           :class="{
@@ -129,6 +138,7 @@ async function onValidate() {
 
 .appbar { height: var(--height-appbar); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-6); border-bottom: 1px solid var(--color-gray-border); flex-shrink: 0; }
 .appbar-logo { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-lg); letter-spacing: var(--letter-spacing-logo); color: var(--color-dark); }
+.appbar-actions { display: flex; align-items: center; gap: var(--space-2); }
 .map-btn { background: var(--color-gray-bg); border: 1px solid var(--color-gray-border); border-radius: var(--radius-full); width: 40px; height: 40px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; }
 
 .content { flex: 1; padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); overflow-y: auto; }

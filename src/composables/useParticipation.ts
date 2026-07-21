@@ -12,8 +12,9 @@ type JauntTheme = Database['public']['Tables']['jaunt_theme']['Row']
 
 export type FullParticipation = Participation & {
   jaunt: Jaunt & {
-    jaunt_theme: JauntTheme
-    quests: Quest[]
+    jaunt_theme: JauntTheme & {
+      quests: Quest[]
+    }
   }
 }
 
@@ -50,8 +51,10 @@ export function useParticipation(jauntId: string) {
         *,
         jaunt:jaunt_id (
           *,
-          jaunt_theme:theme_id (*),
-          quests:quest!theme_id (*)
+          jaunt_theme:theme_id (
+            *,
+            quests:quest!theme_id (*)
+          )
         )
       `)
       .eq('profile_id', auth.session.user.id)
@@ -65,8 +68,8 @@ export function useParticipation(jauntId: string) {
     const full = data as unknown as FullParticipation
 
     // Tri des quêtes par sequence_order
-    if (full?.jaunt?.quests) {
-      full.jaunt.quests.sort((a, b) => a.sequence_order - b.sequence_order)
+    if (full?.jaunt?.jaunt_theme?.quests) {
+      full.jaunt.jaunt_theme.quests.sort((a, b) => a.sequence_order - b.sequence_order)
     }
     participation.value = full
 
