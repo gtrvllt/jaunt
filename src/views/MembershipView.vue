@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useMembership } from '@/composables/useMembership'
 import { useSubscription } from '@/composables/useSubscription'
 
@@ -13,6 +13,9 @@ const {
   startCheckout,
   openPortal,
 } = useSubscription()
+
+// Sans abonnement actif, le membre est sur la formule gratuite.
+const effectivePlan = computed(() => currentPlan.value ?? 'free')
 
 onMounted(() => {
   fetchPlans()
@@ -62,13 +65,13 @@ onMounted(() => {
           :key="plan.id"
           class="plan-card"
           :class="{
-            'plan-card--highlighted': plan.is_highlighted,
-            'plan-card--current': currentPlan === plan.slug,
+            'plan-card--highlighted': plan.is_highlighted && effectivePlan !== plan.slug,
+            'plan-card--current': effectivePlan === plan.slug,
           }"
         >
           <!-- Badge -->
           <div
-            v-if="currentPlan === plan.slug"
+            v-if="effectivePlan === plan.slug"
             class="plan-badge plan-badge--current"
             aria-label="Ton offre actuelle"
           >
@@ -86,8 +89,8 @@ onMounted(() => {
           <div class="plan-header">
             <p class="plan-name">{{ plan.name }}</p>
             <div class="plan-price-row">
-              <span class="plan-price">{{ plan.priceFormatted }}</span>
-              <span class="plan-cycle">/ mois</span>
+              <span class="plan-price">{{ plan.price_cents === 0 ? 'Gratuit' : plan.priceFormatted }}</span>
+              <span v-if="plan.price_cents > 0" class="plan-cycle">/ mois</span>
             </div>
             <p v-if="plan.tagline" class="plan-tagline">{{ plan.tagline }}</p>
           </div>
@@ -109,11 +112,21 @@ onMounted(() => {
 
           <!-- CTA -->
           <button
-            v-if="currentPlan === plan.slug"
+            v-if="effectivePlan === plan.slug"
             class="btn-select btn-select--current"
             disabled
           >
             Offre actuelle
+          </button>
+          <!-- Free non-actuel (membre abonné) : redescente via le portail -->
+          <button
+            v-else-if="plan.slug === 'free'"
+            class="btn-select"
+            :disabled="redirecting"
+            @click="openPortal"
+            aria-label="Gérer mon abonnement"
+          >
+            Résilier mon abonnement
           </button>
           <button
             v-else-if="isActive"

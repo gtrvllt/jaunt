@@ -107,10 +107,10 @@ onMounted(async () => {
         <button class="membership-row" @click="router.push({ name: 'membership' })">
           <div class="membership-info">
             <p class="membership-label">
-              {{ isActive ? `Formule ${currentPlan === 'premium' ? 'Premium' : 'Standard'}` : 'Aucun abonnement' }}
+              {{ isActive ? `Formule ${currentPlan === 'premium' ? 'Premium' : 'Standard'}` : 'Formule Free' }}
             </p>
             <p class="membership-sub">
-              {{ isActive ? 'Gérer ou changer de formule' : 'Découvrir les formules' }}
+              {{ isActive ? 'Gérer ou changer de formule' : 'Passe à un abonnement' }}
             </p>
           </div>
           <span class="membership-chevron" aria-hidden="true">›</span>
