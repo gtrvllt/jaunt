@@ -37,6 +37,7 @@ export function useParticipation(jauntId: string) {
   const error = ref<string | null>(null)
   const validating = ref(false)
   const confirming = ref(false)
+  const requiresSubscription = ref(false)
 
   const MAX_PARTICIPANTS = 4
 
@@ -105,7 +106,15 @@ export function useParticipation(jauntId: string) {
       .eq('id', participation.value.id)
 
     confirming.value = false
-    if (err) { error.value = err.message; return }
+    if (err) {
+      // Blocage freemium renvoyé par le trigger d'accès serveur.
+      if (err.message.includes('FREE_LIMIT_REACHED')) {
+        requiresSubscription.value = true
+      } else {
+        error.value = err.message
+      }
+      return
+    }
 
     participation.value = { ...participation.value, status: 'confirmed' }
     participantCount.value++
@@ -154,5 +163,5 @@ export function useParticipation(jauntId: string) {
     }
   }
 
-  return { participation, participantCount, coAdventurers, MAX_PARTICIPANTS, loading, error, validating, confirming, fetch, subscribeToParticipants, confirmParticipation, startJaunt, validateStep }
+  return { participation, participantCount, coAdventurers, MAX_PARTICIPANTS, loading, error, validating, confirming, requiresSubscription, fetch, subscribeToParticipants, confirmParticipation, startJaunt, validateStep }
 }

@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
+import { useAccess } from '@/composables/useAccess'
 import type { Database } from '@/types/supabase'
 
 type Participation = Database['public']['Tables']['participation']['Row']
@@ -22,8 +23,13 @@ const recap = ref<RecapData | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
+const { access, fetchAccess } = useAccess()
+// Upsell : membre gratuit ayant atteint sa limite (ne peut plus démarrer).
+const showUpsell = computed(() => access.value?.can_start_new_jaunt === false)
+
 onMounted(async () => {
   if (!auth.session) return
+  fetchAccess()
   loading.value = true
   const { data, error: err } = await supabase
     .from('participation')
@@ -98,6 +104,15 @@ function duration(p: RecapData) {
         </div>
       </div>
 
+      <!-- Upsell freemium : limite gratuite atteinte -->
+      <div v-if="showUpsell" class="upsell" role="complementary">
+        <p class="upsell-title">✨ C'était ta Jaunt gratuite !</p>
+        <p class="upsell-sub">Abonne-toi pour repartir à l'aventure et enchaîner les rencontres.</p>
+        <button class="btn-upsell" @click="router.push({ name: 'membership' })">
+          Découvrir les abonnements
+        </button>
+      </div>
+
       <!-- Feedback prompt (1h+ après la fin) -->
       <div v-if="showFeedbackPrompt" class="feedback-prompt" role="complementary">
         <p class="feedback-prompt-title">Comment s'est passée la Jaunt ?</p>
@@ -147,6 +162,12 @@ function duration(p: RecapData) {
 .stat-value--highlight { color: var(--color-info); }
 
 /* Feedback prompt */
+.upsell { background: linear-gradient(135deg, #5856D6 0%, #7c3aed 100%); border-radius: var(--radius-md); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-2); }
+.upsell-title { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-lg); color: #fff; }
+.upsell-sub { font-size: var(--text-sm); color: rgba(255,255,255,0.85); line-height: var(--line-height-base); }
+.btn-upsell { margin-top: var(--space-2); height: 44px; background: #fff; color: var(--color-primary); border: none; border-radius: var(--radius-xl); font-family: var(--font-body); font-size: var(--text-base); font-weight: var(--font-weight-bold); cursor: pointer; }
+.btn-upsell:hover { opacity: 0.9; }
+
 .feedback-prompt { background: linear-gradient(135deg, #5856D6 0%, #7c3aed 100%); border-radius: var(--radius-md); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-3); }
 .feedback-prompt-title { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-lg); color: #fff; }
 .feedback-prompt-sub { font-size: var(--text-sm); color: rgba(255,255,255,0.8); }

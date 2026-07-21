@@ -3,19 +3,27 @@ import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useParticipation } from '@/composables/useParticipation'
 import { useCountdown } from '@/composables/useCountdown'
+import { useAccess } from '@/composables/useAccess'
 
 const route = useRoute()
 const jauntId = route.params.id as string
-const { participation, participantCount, coAdventurers, MAX_PARTICIPANTS, loading, error, validating, confirming, fetch, subscribeToParticipants, confirmParticipation, startJaunt } = useParticipation(jauntId)
+const { participation, participantCount, coAdventurers, MAX_PARTICIPANTS, loading, error, validating, confirming, requiresSubscription, fetch, subscribeToParticipants, confirmParticipation, startJaunt } = useParticipation(jauntId)
+const { access, fetchAccess } = useAccess()
 
 const scheduledAt = computed(() => participation.value?.jaunt.scheduled_at ?? null)
 const { hours, minutes, seconds, isExpired } = useCountdown(scheduledAt.value)
+
+// Paywall : soit bloqué proactivement (limite déjà atteinte), soit après un
+// clic refusé par le trigger serveur.
+const showPaywall = computed(
+  () => requiresSubscription.value || access.value?.can_start_new_jaunt === false,
+)
 
 function initials(nickname: string) {
   return nickname.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 }
 
-onMounted(() => { fetch(); subscribeToParticipants() })
+onMounted(() => { fetch(); subscribeToParticipants(); fetchAccess() })
 </script>
 
 <template>
@@ -148,8 +156,21 @@ onMounted(() => { fetch(); subscribeToParticipants() })
     </main>
 
     <footer v-if="participation" class="footer">
+      <!-- Paywall freemium : limite gratuite atteinte -->
+      <template v-if="participation.status === 'waiting' && showPaywall">
+        <div class="paywall" role="status">
+          <span class="paywall-icon" aria-hidden="true">✨</span>
+          <p class="paywall-title">Tu as adoré ta première Jaunt ?</p>
+          <p class="paywall-sub">Passe à un abonnement pour continuer l'aventure et enchaîner les rencontres.</p>
+        </div>
+        <button class="btn-cancel" @click="$router.push({ name: 'dashboard' })">Plus tard</button>
+        <button class="btn-confirm" @click="$router.push({ name: 'membership' })">
+          Voir les abonnements
+        </button>
+      </template>
+
       <!-- Invitation reçue → confirmer -->
-      <template v-if="participation.status === 'waiting'">
+      <template v-else-if="participation.status === 'waiting'">
         <button class="btn-cancel" @click="$router.push({ name: 'dashboard' })">Pas cette fois</button>
         <button
           class="btn-confirm"
@@ -247,6 +268,12 @@ onMounted(() => { fetch(); subscribeToParticipants() })
 .confirmed-banner { display: flex; align-items: flex-start; gap: var(--space-3); background: #f0fdf4; border: 1.5px solid var(--color-success); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); font-size: 24px; }
 .confirmed-title { font-weight: var(--font-weight-bold); color: var(--color-dark); font-size: var(--text-base); }
 .confirmed-sub { font-size: var(--text-sm); color: var(--color-gray-text); margin-top: 2px; }
+
+/* Paywall freemium */
+.paywall { background: linear-gradient(135deg, #5856D6 0%, #7c3aed 100%); border-radius: var(--radius-md); padding: var(--space-5); text-align: center; margin-bottom: var(--space-1); }
+.paywall-icon { font-size: 28px; }
+.paywall-title { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-lg); color: #fff; margin-top: var(--space-2); }
+.paywall-sub { font-size: var(--text-sm); color: rgba(255,255,255,0.85); line-height: var(--line-height-base); margin-top: var(--space-1); }
 
 .state-card { background: var(--color-gray-bg); border-radius: var(--radius-md); padding: var(--space-6); text-align: center; color: var(--color-gray-text); font-size: var(--text-md); }
 .state-card--error { background: #fff0ef; color: var(--color-error); }
