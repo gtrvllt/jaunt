@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 import { useAuth } from '@/composables/useAuth'
+import { useSubscription } from '@/composables/useSubscription'
 import type { Database } from '@/types/supabase'
 
 type Interest = Database['public']['Tables']['interest']['Row']
@@ -12,6 +13,7 @@ type Achievement = Database['public']['Tables']['achievement']['Row']
 const router = useRouter()
 const auth = useAuthStore()
 const { signOut } = useAuth()
+const { isActive, currentPlan, fetchSubscription } = useSubscription()
 
 const interests = ref<Interest[]>([])
 const achievements = ref<Achievement[]>([])
@@ -22,6 +24,8 @@ onMounted(async () => {
   if (!auth.session) return
   loading.value = true
   error.value = null
+
+  fetchSubscription()
 
   const [interestRes, achievementRes] = await Promise.all([
     supabase
@@ -102,8 +106,12 @@ onMounted(async () => {
         <h2 class="section-title">ABONNEMENT</h2>
         <button class="membership-row" @click="router.push({ name: 'membership' })">
           <div class="membership-info">
-            <p class="membership-label">Formule Standard</p>
-            <p class="membership-sub">Changer ou upgrader</p>
+            <p class="membership-label">
+              {{ isActive ? `Formule ${currentPlan === 'premium' ? 'Premium' : 'Standard'}` : 'Aucun abonnement' }}
+            </p>
+            <p class="membership-sub">
+              {{ isActive ? 'Gérer ou changer de formule' : 'Découvrir les formules' }}
+            </p>
           </div>
           <span class="membership-chevron" aria-hidden="true">›</span>
         </button>
