@@ -1,10 +1,23 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { useMembership } from '@/composables/useMembership'
+import { useSubscription } from '@/composables/useSubscription'
 
 const { plans, loading, error, fetchPlans } = useMembership()
+const {
+  isActive,
+  currentPlan,
+  redirecting,
+  error: subError,
+  fetchSubscription,
+  startCheckout,
+  openPortal,
+} = useSubscription()
 
-onMounted(fetchPlans)
+onMounted(() => {
+  fetchPlans()
+  fetchSubscription()
+})
 </script>
 
 <template>
@@ -16,9 +29,22 @@ onMounted(fetchPlans)
     <main class="content">
       <div class="hero">
         <p class="hero-label">CLUB JAUNT</p>
-        <h1 class="hero-title">Choisis ton abonnement</h1>
+        <h1 class="hero-title">{{ isActive ? 'Ton abonnement' : 'Choisis ton abonnement' }}</h1>
         <p class="hero-sub">Deux formules pour explorer Paris à ta façon.</p>
       </div>
+
+      <!-- Abonnement actif : gestion -->
+      <div v-if="isActive" class="manage-banner">
+        <div>
+          <p class="manage-label">Abonnement actif</p>
+          <p class="manage-plan">Formule {{ currentPlan === 'premium' ? 'Premium' : 'Standard' }}</p>
+        </div>
+        <button class="btn-manage" :disabled="redirecting" @click="openPortal">
+          {{ redirecting ? '…' : 'Gérer' }}
+        </button>
+      </div>
+
+      <p v-if="subError" class="state-error" role="alert">{{ subError }}</p>
 
       <div v-if="loading" class="plans-grid" aria-busy="true">
         <div class="skeleton-card" />
@@ -35,10 +61,24 @@ onMounted(fetchPlans)
           v-for="plan in plans"
           :key="plan.id"
           class="plan-card"
-          :class="{ 'plan-card--highlighted': plan.is_highlighted }"
+          :class="{
+            'plan-card--highlighted': plan.is_highlighted,
+            'plan-card--current': currentPlan === plan.slug,
+          }"
         >
-          <!-- Badge Premium -->
-          <div v-if="plan.is_highlighted" class="plan-badge" aria-label="Offre mise en avant">
+          <!-- Badge -->
+          <div
+            v-if="currentPlan === plan.slug"
+            class="plan-badge plan-badge--current"
+            aria-label="Ton offre actuelle"
+          >
+            ✓ Ton offre
+          </div>
+          <div
+            v-else-if="plan.is_highlighted"
+            class="plan-badge"
+            aria-label="Offre mise en avant"
+          >
             ✦ Recommandé
           </div>
 
@@ -52,7 +92,6 @@ onMounted(fetchPlans)
             <p v-if="plan.tagline" class="plan-tagline">{{ plan.tagline }}</p>
           </div>
 
-          <!-- Séparateur -->
           <div class="plan-divider" />
 
           <!-- Features -->
@@ -63,29 +102,43 @@ onMounted(fetchPlans)
               class="plan-feature"
               :class="{ 'plan-feature--excluded': !feature.included }"
             >
-              <span class="feature-icon" :aria-hidden="true">
-                {{ feature.included ? '✓' : '✕' }}
-              </span>
+              <span class="feature-icon" :aria-hidden="true">{{ feature.included ? '✓' : '✕' }}</span>
               <span>{{ feature.label }}</span>
             </li>
           </ul>
 
           <!-- CTA -->
-          <div v-if="plan.is_highlighted" class="coming-soon-badge" aria-label="Bientôt disponible">
-            Bientôt disponible
-          </div>
+          <button
+            v-if="currentPlan === plan.slug"
+            class="btn-select btn-select--current"
+            disabled
+          >
+            Offre actuelle
+          </button>
+          <button
+            v-else-if="isActive"
+            class="btn-select"
+            :class="{ 'btn-select--primary': plan.is_highlighted }"
+            :disabled="redirecting"
+            @click="openPortal"
+            :aria-label="`Passer à la formule ${plan.name}`"
+          >
+            Passer à {{ plan.name }}
+          </button>
           <button
             v-else
             class="btn-select"
-            @click="$router.push({ name: 'dashboard' })"
-            :aria-label="`Rejoindre le club ${plan.name}`"
+            :class="{ 'btn-select--primary': plan.is_highlighted }"
+            :disabled="redirecting"
+            @click="startCheckout(plan.slug)"
+            :aria-label="`Choisir la formule ${plan.name}`"
           >
-            Choisir Standard
+            {{ redirecting ? 'Redirection…' : `Choisir ${plan.name}` }}
           </button>
         </div>
       </div>
 
-      <p class="footnote">Sans engagement · Résiliable à tout moment</p>
+      <p class="footnote">Sans engagement · Résiliable à tout moment · Paiement sécurisé par Stripe</p>
     </main>
   </div>
 </template>
@@ -104,57 +157,23 @@ onMounted(fetchPlans)
 .hero-title { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-3xl); color: var(--color-dark); letter-spacing: -0.5px; line-height: 1.15; margin-bottom: var(--space-2); }
 .hero-sub { font-size: var(--text-base); color: var(--color-gray-text); }
 
+/* Bandeau de gestion */
+.manage-banner { display: flex; align-items: center; justify-content: space-between; background: var(--color-dark); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); }
+.manage-label { font-size: var(--text-xs); font-weight: var(--font-weight-semibold); letter-spacing: var(--letter-spacing-label); color: rgba(255,255,255,0.7); }
+.manage-plan { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-lg); color: #fff; }
+.btn-manage { height: 40px; padding: 0 var(--space-5); background: #fff; color: var(--color-dark); border: none; border-radius: var(--radius-full); font-size: var(--text-sm); font-weight: var(--font-weight-bold); cursor: pointer; }
+.btn-manage:disabled { opacity: 0.6; cursor: wait; }
+
 /* Plans grid */
 .plans-grid { display: flex; flex-direction: column; gap: var(--space-4); }
 
-/* Plan card */
-.plan-card {
-  border: 1.5px solid var(--color-gray-border);
-  border-radius: var(--radius-lg);
-  padding: var(--space-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  position: relative;
-  background: #fff;
-}
-.plan-card--highlighted {
-  border-color: var(--color-gray-border);
-  background: var(--color-gray-bg);
-  opacity: 0.6;
-  pointer-events: none;
-}
+.plan-card { border: 1.5px solid var(--color-gray-border); border-radius: var(--radius-lg); padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-4); position: relative; background: #fff; }
+.plan-card--highlighted { border-color: var(--color-primary); background: #fafafe; box-shadow: 0 4px 24px rgba(88, 86, 214, 0.10); }
+.plan-card--current { border-color: var(--color-success); background: #f0fdf4; box-shadow: none; }
 
 /* Badge */
-.plan-badge {
-  position: absolute;
-  top: -14px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--color-gray-text);
-  color: #fff;
-  font-size: var(--text-xs);
-  font-weight: var(--font-weight-bold);
-  letter-spacing: var(--letter-spacing-label);
-  padding: var(--space-1) var(--space-4);
-  border-radius: var(--radius-full);
-  white-space: nowrap;
-}
-
-/* Coming soon */
-.coming-soon-badge {
-  height: var(--height-btn);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-xl);
-  border: 1.5px dashed var(--color-gray-border);
-  background: transparent;
-  color: var(--color-gray-text);
-  font-size: var(--text-base);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: 0.02em;
-}
+.plan-badge { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); background: var(--color-primary); color: #fff; font-size: var(--text-xs); font-weight: var(--font-weight-bold); letter-spacing: var(--letter-spacing-label); padding: var(--space-1) var(--space-4); border-radius: var(--radius-full); white-space: nowrap; }
+.plan-badge--current { background: var(--color-success); }
 
 /* Header */
 .plan-header { display: flex; flex-direction: column; gap: var(--space-1); }
@@ -164,59 +183,27 @@ onMounted(fetchPlans)
 .plan-cycle { font-size: var(--text-base); color: var(--color-gray-text); }
 .plan-tagline { font-size: var(--text-sm); color: var(--color-gray-text); margin-top: var(--space-1); }
 
-/* Divider */
 .plan-divider { height: 1px; background: var(--color-gray-border); }
 
 /* Features */
 .plan-features { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-3); }
 .plan-feature { display: flex; align-items: center; gap: var(--space-3); font-size: var(--text-base); color: var(--color-dark); }
 .plan-feature--excluded { color: var(--color-gray-text); }
-.feature-icon {
-  width: 20px;
-  height: 20px;
-  border-radius: var(--radius-full);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--text-xs);
-  font-weight: var(--font-weight-bold);
-  flex-shrink: 0;
-  background: #e8f5e9;
-  color: #2e7d32;
-}
-.plan-feature--excluded .feature-icon {
-  background: var(--color-gray-bg);
-  color: var(--color-gray-text);
-}
+.feature-icon { width: 20px; height: 20px; border-radius: var(--radius-full); display: flex; align-items: center; justify-content: center; font-size: var(--text-xs); font-weight: var(--font-weight-bold); flex-shrink: 0; background: #e8f5e9; color: #2e7d32; }
+.plan-feature--excluded .feature-icon { background: var(--color-gray-bg); color: var(--color-gray-text); }
 
 /* CTA */
-.btn-select {
-  height: var(--height-btn);
-  border-radius: var(--radius-xl);
-  font-family: var(--font-body);
-  font-size: var(--text-base);
-  font-weight: var(--font-weight-semibold);
-  cursor: pointer;
-  transition: opacity 0.15s;
-  border: 1.5px solid var(--color-dark);
-  background: #fff;
-  color: var(--color-dark);
-}
-.btn-select--primary {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: #fff;
-  font-size: var(--text-lg);
-  font-weight: var(--font-weight-bold);
-  box-shadow: var(--shadow-primary);
-}
-.btn-select:hover { opacity: 0.85; }
+.btn-select { height: var(--height-btn); border-radius: var(--radius-xl); font-family: var(--font-body); font-size: var(--text-base); font-weight: var(--font-weight-semibold); cursor: pointer; transition: opacity 0.15s; border: 1.5px solid var(--color-dark); background: #fff; color: var(--color-dark); }
+.btn-select--primary { background: var(--color-primary); border-color: var(--color-primary); color: #fff; font-size: var(--text-lg); font-weight: var(--font-weight-bold); box-shadow: var(--shadow-primary); }
+.btn-select--current { border-color: var(--color-success); color: var(--color-success); background: #fff; cursor: default; }
+.btn-select:disabled { opacity: 0.6; }
+.btn-select:not(:disabled):hover { opacity: 0.85; }
 
 /* Footnote */
 .footnote { text-align: center; font-size: var(--text-xs); color: var(--color-gray-text); padding-bottom: var(--space-4); }
 
 /* States */
-.state-error { background: #fff0ef; border-radius: var(--radius-md); padding: var(--space-6); text-align: center; color: var(--color-error); }
+.state-error { background: #fff0ef; border-radius: var(--radius-md); padding: var(--space-4); text-align: center; color: var(--color-error); font-size: var(--text-sm); }
 .btn-retry { margin-top: var(--space-3); height: 40px; padding: 0 var(--space-5); background: var(--color-error); color: #fff; border: none; border-radius: var(--radius-xl); font-size: var(--text-sm); font-weight: var(--font-weight-semibold); cursor: pointer; }
 
 /* Skeletons */
