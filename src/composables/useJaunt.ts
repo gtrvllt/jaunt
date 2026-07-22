@@ -48,11 +48,15 @@ export function useJaunt() {
       `)
       .eq('profile_id', auth.session.user.id)
       .in('status', ['waiting', 'active'])
-      .maybeSingle()
+      .order('joined_at', { ascending: false })
 
     loading.value = false
     if (err) { error.value = err.message; return }
-    activeJaunt.value = data as ActiveJaunt | null
+
+    // Plusieurs participations possibles : priorité à la jaunt active,
+    // sinon l'invitation la plus récente.
+    const rows = (data ?? []) as ActiveJaunt[]
+    activeJaunt.value = rows.find((r) => r.status === 'active') ?? rows[0] ?? null
   }
 
   function subscribeToInvitation() {
