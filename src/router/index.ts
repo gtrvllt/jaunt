@@ -88,6 +88,12 @@ const router = createRouter({
       component: () => import('@/views/MembershipView.vue'),
       meta: { requiresAuth: true, requiresOnboarding: true },
     },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: () => import('@/views/AdminJauntView.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
   ],
 })
 
@@ -114,6 +120,11 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresOnboarding && isAuthenticated) {
     const done = await profile.checkOnboarding(auth.session!.user.id)
     if (!done) return { name: 'onboarding' }
+  }
+
+  // Route réservée à l'admin
+  if (to.meta.requiresAdmin && !auth.profile?.is_admin) {
+    return { name: 'dashboard' }
   }
 
   return true

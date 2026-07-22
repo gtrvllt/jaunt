@@ -117,6 +117,18 @@ onMounted(async () => {
         </button>
       </section>
 
+      <!-- Admin (réservé) -->
+      <section v-if="auth.profile?.is_admin" aria-label="Admin">
+        <h2 class="section-title">ADMIN</h2>
+        <button class="membership-row" @click="router.push({ name: 'admin' })">
+          <div class="membership-info">
+            <p class="membership-label">Création de jaunts</p>
+            <p class="membership-sub">Thèmes, missions, instances</p>
+          </div>
+          <span class="membership-chevron" aria-hidden="true">›</span>
+        </button>
+      </section>
+
       <!-- Achievements -->
       <section aria-label="Achievements">
         <h2 class="section-title">ACHIEVEMENTS</h2>
