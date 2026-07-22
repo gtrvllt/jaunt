@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { supabase } from '@/lib/supabase'
 import { useAuthStore } from '@/stores/auth'
 import { useAccess } from '@/composables/useAccess'
+import { useJauntPhotos } from '@/composables/useJauntPhotos'
 import type { Database } from '@/types/supabase'
 
 type Participation = Database['public']['Tables']['participation']['Row']
@@ -24,12 +25,14 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 
 const { access, fetchAccess } = useAccess()
+const { photos, fetchPhotos } = useJauntPhotos(jauntId)
 // Upsell : membre gratuit ayant atteint sa limite (ne peut plus démarrer).
 const showUpsell = computed(() => access.value?.can_start_new_jaunt === false)
 
 onMounted(async () => {
   if (!auth.session) return
   fetchAccess()
+  fetchPhotos()
   loading.value = true
   const { data, error: err } = await supabase
     .from('participation')
@@ -81,8 +84,17 @@ function duration(p: RecapData) {
       <h1 class="page-title">Afterjaunt</h1>
       <p class="page-sub">Your urban exploration is complete.</p>
 
-      <!-- Grille photos 2×2 -->
-      <div class="photo-grid" aria-label="Photos de la jaunt">
+      <!-- Carnet photo du groupe -->
+      <div v-if="photos.length > 0" class="photo-grid" aria-label="Photos de la jaunt">
+        <figure v-for="p in photos" :key="p.id" class="photo-slot photo-slot--filled">
+          <img :src="p.photo_url" :alt="p.mission_title" class="photo-img" />
+          <figcaption class="photo-caption">
+            <span class="photo-mission">{{ p.mission_title }}</span>
+            <span v-if="p.nickname" class="photo-author">par {{ p.nickname }}</span>
+          </figcaption>
+        </figure>
+      </div>
+      <div v-else class="photo-grid" aria-label="Photos de la jaunt">
         <div v-for="n in 4" :key="n" class="photo-slot">
           <span class="photo-icon" aria-hidden="true">🖼</span>
         </div>
@@ -153,6 +165,11 @@ function duration(p: RecapData) {
 .photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
 .photo-slot { aspect-ratio: 1; background: var(--color-gray-bg); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; }
 .photo-icon { font-size: 28px; opacity: 0.4; }
+.photo-slot--filled { position: relative; overflow: hidden; display: block; margin: 0; }
+.photo-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-caption { position: absolute; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 1px; padding: var(--space-3) var(--space-3) var(--space-2); background: linear-gradient(to top, rgba(0,0,0,0.72), transparent); }
+.photo-mission { font-size: var(--text-xs); font-weight: var(--font-weight-bold); color: #fff; line-height: 1.2; }
+.photo-author { font-size: 10px; color: rgba(255,255,255,0.8); }
 
 /* Stats */
 .stats-panel { background: var(--color-gray-bg); border-radius: var(--radius-md); padding: var(--space-5); display: flex; flex-direction: column; gap: var(--space-4); }
