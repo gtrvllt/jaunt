@@ -29,6 +29,11 @@ const allDone = computed(
 )
 const progressPct = computed(() => Math.round(groupProgress.value * 100))
 
+// Révélation séquentielle : seules les missions débloquées sont dévoilées,
+// les suivantes restent verrouillées (compteur).
+const visibleMissions = computed(() => missionsWithStatus.value.filter((m) => m.unlocked))
+const lockedCount = computed(() => missionsWithStatus.value.length - visibleMissions.value.length)
+
 const KIND_LABEL: Record<string, string> = {
   photo: '📷 Photo',
   icebreaker: '💬 Icebreaker',
@@ -134,7 +139,7 @@ async function onFinish() {
       <!-- Missions -->
       <div class="mission-list" role="list">
         <div
-          v-for="mission in missionsWithStatus"
+          v-for="mission in visibleMissions"
           :key="mission.id"
           class="mission-card"
           :class="{ 'mission-card--done': mission.completed }"
@@ -181,6 +186,15 @@ async function onFinish() {
               />
             </div>
           </div>
+        </div>
+
+        <!-- Missions verrouillées -->
+        <div v-if="lockedCount > 0" class="locked-card" role="listitem" aria-label="Missions verrouillées">
+          <span class="locked-icon" aria-hidden="true">🔒</span>
+          <p class="locked-text">
+            {{ lockedCount }} mission{{ lockedCount > 1 ? 's' : '' }} à débloquer —
+            complétez la mission en cours pour révéler la suite !
+          </p>
         </div>
       </div>
 
@@ -244,6 +258,11 @@ async function onFinish() {
 .photo-btn { display: inline-flex; align-items: center; gap: var(--space-2); align-self: flex-start; padding: var(--space-2) var(--space-4); background: #fff; border: 1.5px solid var(--color-gray-border); border-radius: var(--radius-full); font-size: var(--text-sm); font-weight: var(--font-weight-semibold); color: var(--color-dark); cursor: pointer; }
 .photo-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .photo-input { display: none; }
+
+/* Missions verrouillées */
+.locked-card { display: flex; align-items: center; gap: var(--space-3); border: 1.5px dashed var(--color-gray-border); border-radius: var(--radius-md); padding: var(--space-4); opacity: 0.8; }
+.locked-icon { font-size: 20px; }
+.locked-text { font-size: var(--text-sm); color: var(--color-gray-text); line-height: var(--line-height-base); }
 
 /* Célébration */
 .all-done { display: flex; align-items: center; gap: var(--space-3); background: #f0fdf4; border: 1.5px solid var(--color-success); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); font-size: var(--text-base); font-weight: var(--font-weight-semibold); color: #166534; }
