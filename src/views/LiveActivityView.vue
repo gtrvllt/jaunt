@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMissions, type MissionWithStatus } from '@/composables/useMissions'
+import { useMaps } from '@/composables/useMaps'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,6 +21,8 @@ const {
   finish,
   subscribe,
 } = useMissions(jauntId)
+
+const { openInMaps } = useMaps()
 
 const finishing = ref(false)
 const confettiRoot = ref<HTMLElement | null>(null)
@@ -158,6 +161,21 @@ async function onFinish() {
                 {{ mission.groupCount }} ✓
               </span>
             </div>
+            <!-- Objectif géographique de l'étape -->
+            <div v-if="mission.location_lat != null && mission.location_lng != null" class="mission-geo">
+              <span class="geo-pin" aria-hidden="true">📍</span>
+              <span class="geo-text">
+                {{ mission.location_address || `${mission.location_lat.toFixed(5)}, ${mission.location_lng.toFixed(5)}` }}
+              </span>
+              <button
+                class="geo-btn"
+                :aria-label="`Itinéraire vers l'étape ${mission.title}`"
+                @click="openInMaps(mission.location_lat, mission.location_lng, mission.title)"
+              >
+                Itinéraire
+              </button>
+            </div>
+
             <p class="mission-name" :class="{ 'mission-name--done': mission.completed }">
               {{ mission.title }}
             </p>
@@ -234,6 +252,13 @@ async function onFinish() {
 .mission-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-1); }
 .mission-kind { font-size: var(--text-xs); font-weight: var(--font-weight-semibold); letter-spacing: var(--letter-spacing-label); color: var(--color-primary); }
 .mission-group { font-size: var(--text-xs); font-weight: var(--font-weight-bold); color: var(--color-success); }
+/* Objectif géographique */
+.mission-geo { display: flex; align-items: center; gap: var(--space-2); background: #fff; border: 1.5px solid var(--color-primary); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-2); }
+.geo-pin { font-size: 14px; flex-shrink: 0; }
+.geo-text { flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: var(--font-weight-semibold); color: var(--color-primary); }
+.geo-btn { flex-shrink: 0; background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-full); padding: 4px var(--space-3); font-family: var(--font-body); font-size: var(--text-xs); font-weight: var(--font-weight-bold); cursor: pointer; }
+.geo-btn:hover { opacity: 0.9; }
+
 .mission-name { font-size: var(--text-md); font-weight: var(--font-weight-semibold); color: var(--color-dark); line-height: var(--line-height-base); }
 .mission-name--done { text-decoration: line-through; color: var(--color-gray-text); }
 .mission-desc { font-size: var(--text-sm); color: var(--color-gray-text); margin-top: 2px; line-height: var(--line-height-base); }
