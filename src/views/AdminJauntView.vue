@@ -16,6 +16,13 @@ const {
 } = useAdminJaunt()
 
 // ── Éditeur de thème ────────────────────────────────────────────────
+function emptyMission(): MissionDraft {
+  return {
+    title: '', description: '', kind: 'photo', solution: '',
+    location_address: '', location_lat: '', location_lng: '',
+  }
+}
+
 const editing = ref<{ themeId: string | null } | null>(null)
 const form = reactive({
   title: '', description: '', difficulty: '2', image_url: '',
@@ -29,7 +36,7 @@ function resetForm() {
     title: '', description: '', difficulty: '2', image_url: '',
     meeting_address: '', meeting_lat: '', meeting_lng: '', meeting_landmark_url: '',
   })
-  missions.value = [{ title: '', description: '', kind: 'photo', solution: '' }]
+  missions.value = [emptyMission()]
   removedIds.value = []
 }
 
@@ -48,12 +55,12 @@ async function openEdit(t: ThemeWithCount) {
   })
   removedIds.value = []
   missions.value = await fetchThemeMissions(t.id)
-  if (missions.value.length === 0) missions.value = [{ title: '', description: '', kind: 'photo', solution: '' }]
+  if (missions.value.length === 0) missions.value = [emptyMission()]
   editing.value = { themeId: t.id }
 }
 
 function addMission() {
-  missions.value.push({ title: '', description: '', kind: 'photo', solution: '' })
+  missions.value.push(emptyMission())
 }
 function removeMission(i: number) {
   const m = missions.value[i]
@@ -183,6 +190,11 @@ onMounted(() => { fetchThemes(); fetchProfiles() })
               <option value="icebreaker">💬 Icebreaker</option>
               <option value="challenge">⚡ Défi</option>
             </select>
+            <BaseInput v-model="m.location_address" placeholder="Lieu de l'étape (adresse) — le secret à trouver" />
+            <div class="row2">
+              <BaseInput v-model="m.location_lat" inputmode="numeric" placeholder="Lat (48.8846)" />
+              <BaseInput v-model="m.location_lng" inputmode="numeric" placeholder="Lng (2.3380)" />
+            </div>
             <textarea v-model="m.solution" class="ta" rows="2" placeholder="Solution / indice de secours (dévoilé au vote)" />
           </div>
 

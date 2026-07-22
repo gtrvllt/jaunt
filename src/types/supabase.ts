@@ -253,6 +253,9 @@ export type Database = {
           description: string | null
           id: string
           kind: string
+          location_address: string | null
+          location_lat: number | null
+          location_lng: number | null
           sequence_order: number
           solution: string | null
           theme_id: string
@@ -263,6 +266,9 @@ export type Database = {
           description?: string | null
           id?: string
           kind?: string
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
           sequence_order: number
           solution?: string | null
           theme_id: string
@@ -273,6 +279,9 @@ export type Database = {
           description?: string | null
           id?: string
           kind?: string
+          location_address?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
           sequence_order?: number
           solution?: string | null
           theme_id?: string

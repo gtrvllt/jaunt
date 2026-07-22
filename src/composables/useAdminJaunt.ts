@@ -23,6 +23,9 @@ export interface MissionDraft {
   description: string
   kind: 'photo' | 'icebreaker' | 'challenge'
   solution: string
+  location_address: string
+  location_lat: string
+  location_lng: string
 }
 
 export interface ThemeWithCount extends JauntTheme {
@@ -80,6 +83,9 @@ export function useAdminJaunt() {
       description: m.description ?? '',
       kind: m.kind as MissionDraft['kind'],
       solution: m.solution ?? '',
+      location_address: m.location_address ?? '',
+      location_lat: m.location_lat != null ? String(m.location_lat) : '',
+      location_lng: m.location_lng != null ? String(m.location_lng) : '',
     }))
   }
 
@@ -113,6 +119,9 @@ export function useAdminJaunt() {
         kind: m.kind,
         sequence_order: i + 1,
         solution: m.solution || null,
+        location_address: m.location_address || null,
+        location_lat: m.location_lat ? Number(m.location_lat) : null,
+        location_lng: m.location_lng ? Number(m.location_lng) : null,
       }
       if (m.id) {
         const { error: upErr } = await supabase.from('mission').update(row).eq('id', m.id)
