@@ -10,6 +10,7 @@ export interface MissionWithStatus extends Mission {
   completed: boolean
   photo_url: string | null
   groupCount: number
+  unlocked: boolean
 }
 
 const cacheKey = (jauntId: string, profileId: string) => `jaunt:missions:${jauntId}:${profileId}`
@@ -27,18 +28,25 @@ export function useMissions(jauntId: string) {
   const myId = computed(() => auth.session?.user.id ?? null)
 
   // Missions enrichies du statut perso + du décompte groupe.
-  const missionsWithStatus = computed<MissionWithStatus[]>(() =>
-    missions.value.map((m) => {
+  // Révélation séquentielle : la mission N n'est débloquée que lorsque la
+  // mission N-1 a au moins une complétion dans le groupe (le premier qui
+  // valide débloque la suite pour tout le monde).
+  const missionsWithStatus = computed<MissionWithStatus[]>(() => {
+    let previousDone = true // la première mission est toujours visible
+    return missions.value.map((m) => {
       const forMission = completions.value.filter((c) => c.mission_id === m.id)
       const mine = forMission.find((c) => c.profile_id === myId.value)
+      const unlocked = previousDone
+      previousDone = forMission.length > 0
       return {
         ...m,
         completed: !!mine,
         photo_url: mine?.photo_url ?? null,
         groupCount: forMission.length,
+        unlocked,
       }
-    }),
-  )
+    })
+  })
 
   const doneCount = computed(() => missionsWithStatus.value.filter((m) => m.completed).length)
 
