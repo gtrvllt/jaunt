@@ -30,6 +30,13 @@ onMounted(() => { fetch(); subscribeToParticipants(); fetchAccess() })
   <div class="screen">
     <header class="appbar">
       <button class="appbar-logo" @click="$router.push({ name: 'dashboard' })">JAUNT</button>
+      <button
+        class="close-btn"
+        aria-label="Fermer et revenir plus tard"
+        @click="$router.push({ name: 'dashboard' })"
+      >
+        ✕
+      </button>
     </header>
 
     <main v-if="loading" class="content" aria-busy="true" aria-label="Chargement…">
@@ -205,7 +212,9 @@ onMounted(() => { fetch(); subscribeToParticipants(); fetchAccess() })
 <style scoped>
 .screen { display: flex; flex-direction: column; min-height: 100dvh; background: #fff; }
 
-.appbar { height: var(--height-appbar); display: flex; align-items: center; padding: 0 var(--space-6); border-bottom: 1px solid var(--color-gray-border); flex-shrink: 0; }
+.appbar { height: var(--height-appbar); display: flex; align-items: center; justify-content: space-between; padding: 0 var(--space-6); border-bottom: 1px solid var(--color-gray-border); flex-shrink: 0; }
+.close-btn { background: var(--color-gray-bg); border: 1px solid var(--color-gray-border); border-radius: var(--radius-full); width: 32px; height: 32px; font-size: 14px; color: var(--color-gray-text); cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.close-btn:hover { color: var(--color-dark); }
 .appbar-logo { font-family: var(--font-brand); font-weight: var(--font-weight-bold); font-size: var(--text-lg); letter-spacing: var(--letter-spacing-logo); color: var(--color-dark); background: none; border: none; cursor: pointer; padding: 0; }
 
 .content { flex: 1; padding: var(--space-6); display: flex; flex-direction: column; gap: var(--space-5); overflow-y: auto; }
