@@ -37,6 +37,12 @@ const progressPct = computed(() => Math.round(groupProgress.value * 100))
 const visibleMissions = computed(() => missionsWithStatus.value.filter((m) => m.unlocked))
 const lockedCount = computed(() => missionsWithStatus.value.length - visibleMissions.value.length)
 
+// Sur une mission photo, c'est l'upload qui vaut validation : tant qu'il n'y
+// a pas de preuve, on ne peut pas cocher.
+function needsPhoto(mission: MissionWithStatus) {
+  return mission.kind === 'photo' && !mission.photo_url
+}
+
 const KIND_LABEL: Record<string, string> = {
   photo: '📷 Photo',
   icebreaker: '💬 Icebreaker',
@@ -150,13 +156,22 @@ async function onFinish() {
         >
           <button
             class="mission-check"
-            :class="{ 'mission-check--done': mission.completed }"
-            :disabled="busyMissionId === mission.id"
+            :class="{
+              'mission-check--done': mission.completed,
+              'mission-check--locked': needsPhoto(mission),
+            }"
+            :disabled="busyMissionId === mission.id || needsPhoto(mission)"
             :aria-pressed="mission.completed"
-            :aria-label="mission.completed ? 'Marquer non fait' : 'Marquer comme fait'"
+            :aria-label="
+              needsPhoto(mission)
+                ? 'Ajoute une photo pour valider cette mission'
+                : mission.completed
+                  ? 'Marquer non fait'
+                  : 'Marquer comme fait'
+            "
             @click="onToggle(mission)"
           >
-            <span aria-hidden="true">{{ mission.completed ? '✓' : '' }}</span>
+            <span aria-hidden="true">{{ mission.completed ? '✓' : needsPhoto(mission) ? '📷' : '' }}</span>
           </button>
 
           <div class="mission-body">
@@ -202,6 +217,9 @@ async function onFinish() {
                 :disabled="busyMissionId === mission.id"
                 @change="onPhoto(mission, $event)"
               />
+              <p v-if="needsPhoto(mission)" class="photo-hint">
+                La photo valide l'étape.
+              </p>
             </div>
           </div>
         </div>
@@ -261,6 +279,8 @@ async function onFinish() {
 .mission-check { flex-shrink: 0; width: 32px; height: 32px; border-radius: var(--radius-full); border: 2px solid var(--color-gray-border); background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: var(--text-lg); font-weight: var(--font-weight-bold); color: #fff; transition: background 0.15s, border-color 0.15s; }
 .mission-check--done { background: var(--color-success); border-color: var(--color-success); }
 .mission-check:disabled { opacity: 0.5; cursor: wait; }
+.mission-check--locked { opacity: 1; background: var(--color-gray-bg); border-style: dashed; font-size: var(--text-sm); cursor: not-allowed; }
+.photo-hint { font-size: var(--text-xs); color: var(--color-gray-text); font-style: italic; }
 
 .mission-body { flex: 1; min-width: 0; }
 .mission-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-1); }
