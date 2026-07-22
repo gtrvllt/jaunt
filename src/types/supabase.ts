@@ -254,6 +254,7 @@ export type Database = {
           id: string
           kind: string
           sequence_order: number
+          solution: string | null
           theme_id: string
           title: string
         }
@@ -263,6 +264,7 @@ export type Database = {
           id?: string
           kind?: string
           sequence_order: number
+          solution?: string | null
           theme_id: string
           title: string
         }
@@ -272,6 +274,7 @@ export type Database = {
           id?: string
           kind?: string
           sequence_order?: number
+          solution?: string | null
           theme_id?: string
           title?: string
         }
@@ -383,6 +386,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           id: string
+          is_admin: boolean
           joined_at: string
           nickname: string
           status: Database["public"]["Enums"]["profile_status"]
@@ -391,6 +395,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           id: string
+          is_admin?: boolean
           joined_at?: string
           nickname: string
           status?: Database["public"]["Enums"]["profile_status"]
@@ -399,6 +404,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           id?: string
+          is_admin?: boolean
           joined_at?: string
           nickname?: string
           status?: Database["public"]["Enums"]["profile_status"]
@@ -627,6 +633,10 @@ export type Database = {
       get_member_access: {
         Args: Record<PropertyKey, never>
         Returns: Json
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
       }
       get_jaunt_participant_count: {
         Args: { jaunt_id: string }
