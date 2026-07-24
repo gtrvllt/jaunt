@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMissions, type MissionWithStatus } from '@/composables/useMissions'
+import { useMaps } from '@/composables/useMaps'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,6 +22,8 @@ const {
   subscribe,
 } = useMissions(jauntId)
 
+const { openInMaps } = useMaps()
+
 const finishing = ref(false)
 const confettiRoot = ref<HTMLElement | null>(null)
 
@@ -28,6 +31,17 @@ const allDone = computed(
   () => missionsWithStatus.value.length > 0 && doneCount.value === missionsWithStatus.value.length,
 )
 const progressPct = computed(() => Math.round(groupProgress.value * 100))
+
+// Révélation séquentielle : seules les missions débloquées sont dévoilées,
+// les suivantes restent verrouillées (compteur).
+const visibleMissions = computed(() => missionsWithStatus.value.filter((m) => m.unlocked))
+const lockedCount = computed(() => missionsWithStatus.value.length - visibleMissions.value.length)
+
+// Sur une mission photo, c'est l'upload qui vaut validation : tant qu'il n'y
+// a pas de preuve, on ne peut pas cocher.
+function needsPhoto(mission: MissionWithStatus) {
+  return mission.kind === 'photo' && !mission.photo_url
+}
 
 const KIND_LABEL: Record<string, string> = {
   photo: '📷 Photo',
@@ -134,7 +148,7 @@ async function onFinish() {
       <!-- Missions -->
       <div class="mission-list" role="list">
         <div
-          v-for="mission in missionsWithStatus"
+          v-for="mission in visibleMissions"
           :key="mission.id"
           class="mission-card"
           :class="{ 'mission-card--done': mission.completed }"
@@ -142,13 +156,22 @@ async function onFinish() {
         >
           <button
             class="mission-check"
-            :class="{ 'mission-check--done': mission.completed }"
-            :disabled="busyMissionId === mission.id"
+            :class="{
+              'mission-check--done': mission.completed,
+              'mission-check--locked': needsPhoto(mission),
+            }"
+            :disabled="busyMissionId === mission.id || needsPhoto(mission)"
             :aria-pressed="mission.completed"
-            :aria-label="mission.completed ? 'Marquer non fait' : 'Marquer comme fait'"
+            :aria-label="
+              needsPhoto(mission)
+                ? 'Ajoute une photo pour valider cette mission'
+                : mission.completed
+                  ? 'Marquer non fait'
+                  : 'Marquer comme fait'
+            "
             @click="onToggle(mission)"
           >
-            <span aria-hidden="true">{{ mission.completed ? '✓' : '' }}</span>
+            <span aria-hidden="true">{{ mission.completed ? '✓' : needsPhoto(mission) ? '📷' : '' }}</span>
           </button>
 
           <div class="mission-body">
@@ -158,6 +181,21 @@ async function onFinish() {
                 {{ mission.groupCount }} ✓
               </span>
             </div>
+            <!-- Objectif géographique de l'étape -->
+            <div v-if="mission.location_lat != null && mission.location_lng != null" class="mission-geo">
+              <span class="geo-pin" aria-hidden="true">📍</span>
+              <span class="geo-text">
+                {{ mission.location_address || `${mission.location_lat.toFixed(5)}, ${mission.location_lng.toFixed(5)}` }}
+              </span>
+              <button
+                class="geo-btn"
+                :aria-label="`Itinéraire vers l'étape ${mission.title}`"
+                @click="openInMaps(mission.location_lat, mission.location_lng, mission.title)"
+              >
+                Itinéraire
+              </button>
+            </div>
+
             <p class="mission-name" :class="{ 'mission-name--done': mission.completed }">
               {{ mission.title }}
             </p>
@@ -179,8 +217,20 @@ async function onFinish() {
                 :disabled="busyMissionId === mission.id"
                 @change="onPhoto(mission, $event)"
               />
+              <p v-if="needsPhoto(mission)" class="photo-hint">
+                La photo valide l'étape.
+              </p>
             </div>
           </div>
+        </div>
+
+        <!-- Missions verrouillées -->
+        <div v-if="lockedCount > 0" class="locked-card" role="listitem" aria-label="Missions verrouillées">
+          <span class="locked-icon" aria-hidden="true">🔒</span>
+          <p class="locked-text">
+            {{ lockedCount }} mission{{ lockedCount > 1 ? 's' : '' }} à débloquer —
+            complétez la mission en cours pour révéler la suite !
+          </p>
         </div>
       </div>
 
@@ -229,11 +279,20 @@ async function onFinish() {
 .mission-check { flex-shrink: 0; width: 32px; height: 32px; border-radius: var(--radius-full); border: 2px solid var(--color-gray-border); background: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: var(--text-lg); font-weight: var(--font-weight-bold); color: #fff; transition: background 0.15s, border-color 0.15s; }
 .mission-check--done { background: var(--color-success); border-color: var(--color-success); }
 .mission-check:disabled { opacity: 0.5; cursor: wait; }
+.mission-check--locked { opacity: 1; background: var(--color-gray-bg); border-style: dashed; font-size: var(--text-sm); cursor: not-allowed; }
+.photo-hint { font-size: var(--text-xs); color: var(--color-gray-text); font-style: italic; }
 
 .mission-body { flex: 1; min-width: 0; }
 .mission-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-1); }
 .mission-kind { font-size: var(--text-xs); font-weight: var(--font-weight-semibold); letter-spacing: var(--letter-spacing-label); color: var(--color-primary); }
 .mission-group { font-size: var(--text-xs); font-weight: var(--font-weight-bold); color: var(--color-success); }
+/* Objectif géographique */
+.mission-geo { display: flex; align-items: center; gap: var(--space-2); background: #fff; border: 1.5px solid var(--color-primary); border-radius: var(--radius-sm); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-2); }
+.geo-pin { font-size: 14px; flex-shrink: 0; }
+.geo-text { flex: 1; min-width: 0; font-size: var(--text-sm); font-weight: var(--font-weight-semibold); color: var(--color-primary); }
+.geo-btn { flex-shrink: 0; background: var(--color-primary); color: #fff; border: none; border-radius: var(--radius-full); padding: 4px var(--space-3); font-family: var(--font-body); font-size: var(--text-xs); font-weight: var(--font-weight-bold); cursor: pointer; }
+.geo-btn:hover { opacity: 0.9; }
+
 .mission-name { font-size: var(--text-md); font-weight: var(--font-weight-semibold); color: var(--color-dark); line-height: var(--line-height-base); }
 .mission-name--done { text-decoration: line-through; color: var(--color-gray-text); }
 .mission-desc { font-size: var(--text-sm); color: var(--color-gray-text); margin-top: 2px; line-height: var(--line-height-base); }
@@ -244,6 +303,11 @@ async function onFinish() {
 .photo-btn { display: inline-flex; align-items: center; gap: var(--space-2); align-self: flex-start; padding: var(--space-2) var(--space-4); background: #fff; border: 1.5px solid var(--color-gray-border); border-radius: var(--radius-full); font-size: var(--text-sm); font-weight: var(--font-weight-semibold); color: var(--color-dark); cursor: pointer; }
 .photo-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
 .photo-input { display: none; }
+
+/* Missions verrouillées */
+.locked-card { display: flex; align-items: center; gap: var(--space-3); border: 1.5px dashed var(--color-gray-border); border-radius: var(--radius-md); padding: var(--space-4); opacity: 0.8; }
+.locked-icon { font-size: 20px; }
+.locked-text { font-size: var(--text-sm); color: var(--color-gray-text); line-height: var(--line-height-base); }
 
 /* Célébration */
 .all-done { display: flex; align-items: center; gap: var(--space-3); background: #f0fdf4; border: 1.5px solid var(--color-success); border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); font-size: var(--text-base); font-weight: var(--font-weight-semibold); color: #166534; }
