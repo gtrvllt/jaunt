@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMissions, type MissionWithStatus } from '@/composables/useMissions'
 import { useMaps } from '@/composables/useMaps'
+import { useGeolocation } from '@/composables/useGeolocation'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,6 +24,11 @@ const {
 } = useMissions(jauntId)
 
 const { openInMaps } = useMaps()
+const { getPosition, distanceMeters } = useGeolocation()
+
+const VALIDATION_RADIUS_M = 200
+const geoCheckingId = ref<string | null>(null)
+const geoError = ref<string | null>(null)
 
 const finishing = ref(false)
 const confettiRoot = ref<HTMLElement | null>(null)
@@ -76,16 +82,41 @@ function burstConfetti() {
   }
 }
 
+// Vérifie que l'utilisateur est bien sur place (≤ 200 m du lieu de l'étape)
+// avant de valider. Sans coordonnées sur la mission, aucun contrôle.
+async function verifyNearby(mission: MissionWithStatus): Promise<boolean> {
+  if (mission.location_lat == null || mission.location_lng == null) return true
+  geoError.value = null
+  geoCheckingId.value = mission.id
+  try {
+    const pos = await getPosition()
+    const dist = distanceMeters(pos, { lat: mission.location_lat, lng: mission.location_lng })
+    if (dist > VALIDATION_RADIUS_M) {
+      geoError.value = `Tu es à ${Math.round(dist)} m du lieu. Rapproche-toi à moins de ${VALIDATION_RADIUS_M} m pour valider cette étape.`
+      return false
+    }
+    return true
+  } catch (e) {
+    geoError.value = e instanceof Error ? e.message : 'Erreur de localisation.'
+    return false
+  } finally {
+    geoCheckingId.value = null
+  }
+}
+
 async function onToggle(mission: MissionWithStatus) {
-  const wasDone = mission.completed
+  // Décocher est toujours permis (peu importe où on est).
+  if (mission.completed) { await toggle(mission); return }
+  if (!(await verifyNearby(mission))) return
   await toggle(mission)
-  if (!wasDone) celebrate()
+  if (!error.value) celebrate()
 }
 
 async function onPhoto(mission: MissionWithStatus, event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
+  if (!(await verifyNearby(mission))) { input.value = ''; return }
   const wasDone = mission.completed
   await uploadPhoto(mission, file)
   input.value = ''
@@ -145,6 +176,11 @@ async function onFinish() {
         </p>
       </div>
 
+      <!-- Erreur de géolocalisation -->
+      <div v-if="geoError" class="geo-error" role="alert">
+        <span aria-hidden="true">📍</span> {{ geoError }}
+      </div>
+
       <!-- Missions -->
       <div class="mission-list" role="list">
         <div
@@ -160,7 +196,7 @@ async function onFinish() {
               'mission-check--done': mission.completed,
               'mission-check--locked': needsPhoto(mission),
             }"
-            :disabled="busyMissionId === mission.id || needsPhoto(mission)"
+            :disabled="busyMissionId === mission.id || geoCheckingId === mission.id || needsPhoto(mission)"
             :aria-pressed="mission.completed"
             :aria-label="
               needsPhoto(mission)
@@ -171,7 +207,7 @@ async function onFinish() {
             "
             @click="onToggle(mission)"
           >
-            <span aria-hidden="true">{{ mission.completed ? '✓' : needsPhoto(mission) ? '📷' : '' }}</span>
+            <span aria-hidden="true">{{ geoCheckingId === mission.id ? '📡' : mission.completed ? '✓' : needsPhoto(mission) ? '📷' : '' }}</span>
           </button>
 
           <div class="mission-body">
@@ -280,6 +316,9 @@ async function onFinish() {
 .mission-check--done { background: var(--color-success); border-color: var(--color-success); }
 .mission-check:disabled { opacity: 0.5; cursor: wait; }
 .mission-check--locked { opacity: 1; background: var(--color-gray-bg); border-style: dashed; font-size: var(--text-sm); cursor: not-allowed; }
+
+/* Erreur géolocalisation */
+.geo-error { background: #fff7ed; border: 1.5px solid #f59e0b; border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); font-size: var(--text-sm); color: #92400e; line-height: var(--line-height-base); }
 .photo-hint { font-size: var(--text-xs); color: var(--color-gray-text); font-style: italic; }
 
 .mission-body { flex: 1; min-width: 0; }
